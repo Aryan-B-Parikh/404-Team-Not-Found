@@ -12,6 +12,10 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/portflow"
     db_echo: bool = False
+    # Managed-Postgres toggles (Supabase et al.): pgbouncer → disable named prepared
+    # statements (transaction-pool mode); ssl → force sslmode=require.
+    db_pgbouncer: bool = False
+    db_ssl: bool = False
     port: int = 8000
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     llm_provider: str = "auto"

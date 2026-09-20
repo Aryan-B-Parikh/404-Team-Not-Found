@@ -1,6 +1,6 @@
-# Deployment — Vercel (frontend) + Voroa (backend + PostgreSQL)
+# Deployment — Vercel (frontend) + Voroa (backend) + Supabase (PostgreSQL)
 
-PortPulse AI ships as two deployable units:
+PortPulse AI ships as three deployable units:
 
 ```text
 ┌────────────────────────────┐         ┌─────────────────────────────────┐
@@ -8,7 +8,8 @@ PortPulse AI ships as two deployable units:
 │  React + Vite build        │ ──────► │  uvicorn app.main:app           │
 │  portpulse-ai.vercel.app   │ /health │      │                          │
 └────────────────────────────┘         │      ▼                          │
-                                       │  Voroa — managed PostgreSQL     │
+                                       │  Supabase — managed PostgreSQL  │
+                                       │  (pooler :6543 / direct :5432)  │
                                        └─────────────────────────────────┘
 ```
 
@@ -27,13 +28,24 @@ psycopg3 driver (`postgresql+psycopg://…`) by `src/backend/app/db.py`.
 
 ---
 
-## 1. Backend on Voroa (web service + PostgreSQL)
+## 1. Database on Supabase (done — provisioned)
 
-### 1.1 Create the PostgreSQL service
+A dedicated **portpulse-ai** Supabase project (ref `fxdclkjneuoelggoralu`, region
+`ap-south-1`) is already provisioned and **fully seeded** (REAL POLB reference data +
+DEMO_AIS simulation layer). The app role is `portpulse_app`; its credentials live in
+the Voroa environment variables — never in the repository.
 
-1. In the Voroa dashboard, **New service → PostgreSQL** (same workspace).
-2. Name it (e.g. `portpulse-db`). When it is live, copy the connection string —
-   it looks like `postgresql://user:password@host:5432/portflow`.
+For a **new** Supabase project instead:
+
+1. Create the project (free tier, region close to the backend).
+2. Create the app role with DDL rights on `public` (see `docs/deployment.md` history
+   or run the backend seed once as `postgres`), then set `DATABASE_URL` to the
+   **session pooler** string — username must carry the project ref:
+   `postgresql+psycopg://<user>.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require`
+3. The backend self-seeds an empty database on startup (`--reset` wipes and re-seeds).
+
+> ⚠️ Supabase free-tier projects **pause after ~7 days of inactivity**; the deployed
+> backend keeps it active while it runs. Restore a paused project from the dashboard.
 
 ### 1.2 Create the web service
 
@@ -58,7 +70,9 @@ psycopg3 driver (`postgresql+psycopg://…`) by `src/backend/app/db.py`.
 
    | Key | Value |
    |---|---|
-   | `DATABASE_URL` | the Postgres connection string from 1.1 (scheme `postgresql://` is fine) |
+   | `DATABASE_URL` | `postgresql+psycopg://portpulse_app.<ref>:<password>@aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require` (Supabase session pooler; username carries the project ref) |
+   | `DB_PGBOUNCER` | `true` only for the transaction pooler `:6543` (disables prepared statements); not needed on `:5432` |
+   | `DB_SSL` | `true` (or rely on the `sslmode=require` in the URL) |
    | `PORT` | leave unset — Voroa injects it; the start command reads it |
    | `CORS_ORIGINS` | `https://<your-vercel-domain>` (harmless with the proxy, correct if you ever call the API cross-origin) |
    | `LLM_PROVIDER` | `auto` |
@@ -127,10 +141,10 @@ available on the host. This is stated honestly in `IMPLEMENTATION_STATUS.md` and
 
 ## 4. Cost / plan notes
 
-- Voroa hosts one web service + one managed PostgreSQL in the same workspace; the free
-  default address (`*.getvoroa.com`) includes HTTPS. Idle/sleep behaviour and plan
-  limits are set in the Voroa dashboard — for a demo, disable sleeping so the first
-  judge request is not a cold start.
+- **Supabase free tier** hosts the database ($0/month; the project is already seeded).
+- **Voroa** hosts the FastAPI web service; the free default address (`*.getvoroa.com`)
+  includes HTTPS. Idle/sleep behaviour and plan limits are set in the Voroa dashboard —
+  for a demo, disable sleeping so the first judge request is not a cold start.
 - Vercel's Hobby plan serves the SPA and the rewrites used here; no serverless
   functions are involved, so no function-timeout tuning is needed.
 
@@ -141,5 +155,7 @@ available on the host. This is stated honestly in `IMPLEMENTATION_STATUS.md` and
 | Deploy aborted — "not ready within 180s" | First boot seeds the DB; raise **Startup timeout** (Settings) to ~300 s and set Health check path to `/health`. |
 | `/api/*` returns 504 from Vercel | Long CP-SAT solve. Retry once (warm cache) or prewarm with `GET /api/overview` before the demo. |
 | `Can't load plugin: sqlalchemy.dialects:postgres` | `DATABASE_URL` scheme not recognised — the normaliser in `db.py` handles `postgresql://` and `postgres://`; make sure the var was saved and the service redeployed. |
+| `no tenant identifier provided (external_id or sni_hostname required)` | Supabase pooler URL missing the project ref in the username — use `<user>.<project-ref>@aws-0-<region>.pooler.supabase.com`. |
+| `password authentication failed` for `portpulse_app` | Reset the role password (Supabase dashboard → SQL editor) and update the Voroa env var; the role is defined in the `create_portpulse_app_role` migration. |
 | CORS errors in the browser console | You are calling the Voroa URL directly instead of through the Vercel proxy; use relative `/api` paths (the app already does). |
 | Empty charts, "no congestion observations" | Database emptied; redeploy the backend (startup re-seeds only when `terminal` is empty) or run the seed command once. |

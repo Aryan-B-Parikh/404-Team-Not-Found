@@ -135,10 +135,11 @@ npm run dev
 
 ### 🌍 Production deployment
 
-The stack deploys as two units — **frontend on Vercel**, **backend + managed PostgreSQL on Voroa**
-(GitHub-connected deploy platform): the Vercel project proxies `/api/*` and `/health` to the Voroa
-web service via `src/frontend/vercel.json` rewrites, so the browser talks to a single origin with
-no CORS setup. The backend self-bootstraps (schema + seed + weather/tide pipelines) on first boot.
+The stack deploys as three units — **frontend on Vercel**, **FastAPI backend on Voroa**, and
+**PostgreSQL on Supabase** (already provisioned and seeded): the Vercel project proxies `/api/*`
+and `/health` to the Voroa web service via `src/frontend/vercel.json` rewrites, so the browser
+talks to a single origin with no CORS setup. The backend self-bootstraps (schema + seed +
+weather/tide pipelines) against the Supabase pooler on first boot.
 Full step-by-step guide: [`docs/deployment.md`](docs/deployment.md).
 
 **Verify:** open `http://localhost:5173`, inspect Overview / Forecast / Berth & Cranes / 72-Hr Plan, then open **Bob AI** and ask: *"What's the biggest operational risk over the next 72 hours?"*

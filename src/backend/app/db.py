@@ -27,7 +27,28 @@ def _normalise_database_url(url: str) -> str:
     return url
 
 
-engine = create_engine(_normalise_database_url(settings.database_url), echo=settings.db_echo, pool_pre_ping=True, future=True)
+def _engine_kwargs() -> dict:
+    """Engine kwargs with managed-Postgres safety toggles (Supabase et al.).
+
+    ``DB_PGBOUNCER=true`` disables named prepared statements (psycopg3
+    ``prepare_threshold=None``) so the engine can sit behind PgBouncer in
+    transaction-pooling mode (Supabase pooler :6543). ``DB_SSL=true`` forces
+    ``sslmode=require`` (Supabase rejects plaintext connections).
+    """
+    kwargs: dict = {"echo": settings.db_echo, "pool_pre_ping": True, "future": True}
+    if _normalise_database_url(settings.database_url).startswith("sqlite"):
+        return kwargs
+    connect_args: dict = {}
+    if settings.db_pgbouncer:
+        connect_args["prepare_threshold"] = None
+    if settings.db_ssl:
+        connect_args["sslmode"] = "require"
+    if connect_args:
+        kwargs["connect_args"] = connect_args
+    return kwargs
+
+
+engine = create_engine(_normalise_database_url(settings.database_url), **_engine_kwargs())
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False, future=True)
 
 
