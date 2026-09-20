@@ -24,7 +24,7 @@ Base URL: `http://localhost:8000`. All JSON unless noted. `stub: true` marks a P
 | GET | `/api/vessels` | W1 | `{vessels[{…, assignment, deferred}]}` |
 | GET | `/api/hotspots` | Integrator | `{ranked[], most_actionable, method}` |
 | GET | `/api/export?type=` | Integrator | CSV (`assignments\|routing\|vessels\|forecast`) |
-| GET/POST | `/api/bob` | Integrator | GET `{messages[]}` · POST `{content, actions[], mode, provider, intent}` (`provider` = `bob\|claude\|deterministic`) |
+| GET/POST | `/api/bob` | Integrator | GET `{messages[]}` · POST `{content, actions[], mode, provider, intent}` (`provider` = `bob\|deterministic`) |
 
 ## New (frozen in Phase 0 — implement behind the flag)
 

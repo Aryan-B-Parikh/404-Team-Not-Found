@@ -1,4 +1,4 @@
-# Solution Overview — PortFlow SBX
+# Solution Overview — PortPulse AI
 
 A FastAPI gateway over five capability services, a SimPy synthetic operations layer, PostgreSQL
 persistence, and a React/Vite dashboard. Everything shares one model time `t0` from `context.py`.
@@ -14,7 +14,7 @@ REAL POLB capacity + SimPy operations layer  ──►  PostgreSQL
  ① forecasting.py      ② anomaly.py         ③ hotspot.py                ④ optimiser.py
  (LightGBM + bands)  (Isolation Forest)  (risk score + binding)   (OR-Tools CP-SAT BAP/QCAP)
         │                                                                    │
-        └──────────────► ⑤ routing.py ──► ⑥ plan.py ──► llm.py (Claude) ◄────┘
+        └──────────────► ⑤ routing.py ──► ⑥ plan.py ──► llm.py (Bob) ◄────┘
                                                    │
                                                    ▼
                                    pipeline.py ──► FastAPI /api/* ──► React dashboard + Bob
@@ -88,13 +88,13 @@ alt-port table (Oakland / Seattle-Tacoma / Prince Rupert / Ensenada) with availa
 
 12 × 6 h shifts with arrivals, berthings, crane deployment, congestion alerts (WATCH ≥45 / WARN ≥60 /
 CRIT ≥75), routing decide-by deadlines and a supervisor checklist; emits JSON + printable text and cites
-the **forecast/optimiser run ids + model version**. The **Claude** layer rewrites it for a supervisor —
-strictly from the given numbers — with a deterministic fallback.
+the **forecast/optimiser run ids + model version**. The **Bob** agent rewrites it for a supervisor —
+strictly from the given numbers — with a deterministic fallback when the Bob agent is unavailable.
 
 ## Bob — load-bearing assistant — `routers/bob.py` + `services/llm.py`
 
 `POST /api/bob` → intent detection → the matching pack **actually runs the engines** → engine JSON becomes
-an `ENGINE DATA` block → Claude answers strictly from it → the reply is persisted with the `actions` it ran
+an `ENGINE DATA` block → the Bob agent answers strictly from it → the reply is persisted with the `actions` it ran
 and `mode` (`llm` | `deterministic`).
 
 ---

@@ -185,7 +185,7 @@ export default function Routing({ onNavigateTab }: RoutingProps) {
         <div className="flex items-center gap-2">
           <DollarSign className="w-4 h-4 text-[var(--brand)] shrink-0" />
           <span className="font-semibold text-[var(--text-primary)]">
-            Maritime Routing Economics Model
+            Maritime Routing Economics Model (indicative estimates — not carrier quotes)
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-mono text-[var(--text-secondary)]">
@@ -196,6 +196,9 @@ export default function Routing({ onNavigateTab }: RoutingProps) {
           <span>
             Alt Ports: {data.cost_model?.alt_ports?.join(", ") || "Oakland, Seattle, Tacoma"}
           </span>
+        </div>
+        <div className="w-full text-[10px] text-[var(--text-muted)] font-sans">
+          Savings are indicative planning estimates from linear formulas over public mid-range references — not carrier quotes or berth-fee quotations. External-port diversion requires an operator-supplied live port-status feed.
         </div>
       </div>
 

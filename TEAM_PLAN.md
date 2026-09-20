@@ -1,6 +1,6 @@
 # TEAM_PLAN — 4-Way Parallel Work Plan
 
-**Goal:** finish PortFlow SBX with 4 people coding **in parallel** and merging **cleanly** (no
+**Goal:** finish PortPulse AI with 4 people coding **in parallel** and merging **cleanly** (no
 "works-on-my-machine" pile-up). The doc is built so that **no two people edit the same file**, and every
 cross-team dependency is a **frozen contract** agreed before anyone starts.
 
@@ -26,8 +26,8 @@ Architecture & interfaces: [`docs/architecture.md`](docs/architecture.md) · [`d
 
 **Done & running:** SimPy simulation · LightGBM forecast (+quantile bands, validation) · IsolationForest
 anomalies · hotspot risk score + binding resource · **OR-Tools CP-SAT** BAP/QCAP + FIFO baseline ·
-routing · 72h plan · FastAPI (12 routes) · PostgreSQL persistence · React/Vite dashboard (6 tabs) ·
-**MCP server for IBM Bob (11 tools)** · AIS pipeline.
+routing · 72h plan · FastAPI (29 endpoint operations) · PostgreSQL persistence · React/Vite dashboard (9 tabs) ·
+**MCP server for IBM Bob (12 tools, 4 resources, 3 prompts)** · AIS pipeline.
 
 **Remaining (from `IMPLEMENTATION_STATUS.md` §6):**
 
@@ -191,7 +191,7 @@ Tasks
 3. **Drill-down** (`components/DrillDownDrawer.tsx`): port → terminal → berth → vessel.
 4. **Scenario-compare view** (`components/ScenarioCompare.tsx`): baseline vs scenario side-by-side, wired to `/api/scenarios/extended`, with clone/rollback buttons.
 5. **Schedule upload + quality panel** (`components/ScheduleUpload.tsx`, `tabs/Overview.tsx` quality card) wired to `/api/vessels/upload` + `/api/quality`.
-6. **Submission**: refresh screenshots, record the demo video per `demo/demo-video-script.md`, update team details.
+6. **Submission**: refresh screenshots, record the demo video (link lives in `demo/demo-video-link.txt`), update team details and `submission.yaml`.
 
 **Acceptance:** `npm run build` green; every new view reads a real endpoint (no hard-coded data); heatmap and
 drill-down work keyboard-only; screenshots + video link updated.

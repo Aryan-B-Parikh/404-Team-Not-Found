@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BIN_DIR="${ROOT_DIR}/bin"
 PGDATA="${ROOT_DIR}/pgdata"
 
-echo "=== Stopping PortFlow SBX Services ==="
+echo "=== Stopping PortPulse AI Services ==="
 
 echo "Stopping Vite frontend..."
 pkill -f "vite --host" 2>/dev/null || true

@@ -49,8 +49,8 @@ def test_bob_engine_pipeline_is_load_bearing(client):
         f"No engine actions recorded — pipeline was bypassed: {body['actions']}"
     )
 
-    # 4. Provider is one of the documented values
-    assert body["provider"] in ("bob", "deterministic", "claude"), (
+    # 4. Provider is one of the documented values (no secondary LLM provider exists)
+    assert body["provider"] in ("bob", "deterministic"), (
         f"Unknown provider: {body['provider']!r}"
     )
 

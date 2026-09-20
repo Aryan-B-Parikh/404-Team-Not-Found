@@ -15,7 +15,7 @@ class BobBody(BaseModel): message: str
 @router.get("/bob/status", response_model=BobStatusResponse)
 def status():
     settings = get_settings()
-    return {"provider": llm.provider(), "configured": bool(settings.bob_api_key), "cli_available": bob_agent._cli_path() is not None, "mcp": "PortFlow SBX", "tools": 12, "fallback": "deterministic engine-grounded"}
+    return {"provider": llm.provider(), "configured": bool(settings.bob_api_key), "cli_available": bob_agent._cli_path() is not None, "mcp": "PortPulse AI", "tools": 12, "fallback": "deterministic engine-grounded"}
 @router.get("/bob", response_model=BobHistoryResponse)
 def history(db: Session = Depends(get_db)):
     rows = db.execute(select(ChatMessage).order_by(ChatMessage.id.desc()).limit(50)).scalars().all()

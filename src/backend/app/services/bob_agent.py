@@ -1,7 +1,7 @@
 """IBM Bob provider — the app delegates to the real Bob agent.
 
 Bob is load-bearing: the agent receives the operational question, discovers the
-project PortFlow SBX MCP server, calls engine tools, and writes the final answer.
+project PortPulse AI MCP server, calls engine tools, and writes the final answer.
 The deterministic engine-grounded path is only a failure mode.
 """
 
@@ -22,7 +22,7 @@ BOB_OPERATIONAL_RULES = """You are the IBM Bob operations agent for PortPulse AI
 This is a decision-support application, not a generic chatbot.
 
 Rules:
-1. For every operational question, use the PortFlow SBX MCP tools before answering.
+1. For every operational question, use the PortPulse AI MCP tools before answering.
 2. Never invent or estimate a number when a tool can return it.
 3. For forecast questions use forecast_congestion and, when useful, rank_hotspots/detect_anomalies.
 4. For berth/crane questions use optimise_berth_cranes and compare its CP-SAT result with FIFO.

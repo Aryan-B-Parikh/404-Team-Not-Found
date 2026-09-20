@@ -125,7 +125,7 @@ verified on the running stack; `npm run dev:all` alias added; documented in `doc
 - ~~Dead-local assignments (F841) chased in five separate commits~~ — rule re-enabled in
   `pyproject.toml` (0 violations); exceptions now require `# noqa: F841` + reason.
 - ~~Full 3-minute test suite on every push~~ — split CI: `fast` job (lint + `-m "not slow"` ≈3s
-  backend + typecheck) on every push; `full` job (suite + build + submission validation) on PRs to main.
+  backend + typecheck) on every push; `full` job (suite + build) on PRs to main.
   Proven: fast suite = 10 passed in 1.61s locally.
 - ~~B-1 Anomaly detector fires on 3 of 4 zones every run~~ — closed 2026-09-19 via the acceptance's
   documented threshold path: `contamination='auto'` + evidence floor `SCORE_FLOOR=0.2`; a flag now

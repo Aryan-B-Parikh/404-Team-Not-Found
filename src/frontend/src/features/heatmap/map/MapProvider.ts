@@ -1,5 +1,5 @@
 /**
- * PortFlow SBX — MapProvider Abstraction
+ * PortPulse AI — MapProvider Abstraction
  * 
  * Provides an isolated, keyless map source for hackathon and local demo use.
  * Does NOT require user registration, tokens, or external API keys.
@@ -98,7 +98,7 @@ export const OpenFreeMapPositronProvider: MapProvider = {
 };
 
 /**
- * Active default map provider for PortFlow SBX
+ * Active default map provider for PortPulse AI
  * OpenFreeMap Positron is a keyless vector style with muted light-gray
  * cartography, ideal for congestion overlays. CARTO/OSM raster providers
  * above remain as offline/keyless fallbacks.

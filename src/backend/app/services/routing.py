@@ -20,6 +20,22 @@ PRIORITY_WAIT_H = 10.0
 REEFFER_PRIORITY_MIN = 200
 SUSTAINED_HOURS = 3
 
+# All ``est_savings_usd`` figures below are INDICATIVE planning estimates, not quotes.
+# They are linear formulas over public mid-range references (see reference.py) — they are
+# not carrier quotes, berth-fee quotations or auction-clearing prices, and external-port
+# availability comes from the operator-supplied PORT_STATUS_JSON feed, not a live feed.
+ASSUMPTIONS = {
+    "daily_op_cost_usd": ref.DAILY_OP_COST_USD,
+    "daily_op_cost_basis": "mid-range public estimate for a mid/large container ship (reference.py)",
+    "reefer_content_value_usd": ref.REEFER_CONTENT_VALUE_USD,
+    "reefer_basis": "expected spoilage-risk value per reefer unit per event (reference.py)",
+    "divert_model": "net = (wait_avoided/24)*daily_op_cost − (shift/24)*daily_op_cost*0.35",
+    "slow_steam_model": "0.35 × (steam_down/24) × daily_op_cost",
+    "priority_model": "0.4 × reefer_units × reefer_content_value",
+    "external_feed": "PORT_STATUS_JSON (operator-supplied; static table used for feasibility only)",
+    "caveat": "Indicative planning estimates only — not carrier quotes or prices.",
+}
+
 
 def _live_port_status() -> dict[str, dict]:
     """Read an operator-provided current external-port feed.

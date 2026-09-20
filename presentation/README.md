@@ -1,14 +1,16 @@
-# demo/ — Demo artifacts
+# presentation/ — Submission deck
 
-The submission deck is `presentation/portpulse_ai.pdf` (see `presentation/README.md` for the slide outline and claims policy). Screenshots live in `demo/screenshots/`, the hosted video link in `demo/demo-video-link.txt`, and `demo/live-demo-url.txt` states the live-demo status.
+`portpulse_ai.pdf` is the submission deck. Fonts are self-hosted in `presentation/fonts/`
+so the deck renders without network access. (The earlier `slides.pdf` / `slides.html` /
+`preview.png` names no longer exist; the deck ships as a single PDF.)
 
 ## Slide outline
 
 1. **Problem** — San Pedro Bay congestion, reactive hotspot discovery, manual berth/crane planning and late routing decisions.
 2. **Data** — REAL: Port of Long Beach terminal reference facts. DEMO: reproducible synthetic operational history labelled `DEMO_AIS`. REAL AIS is available through the NOAA AccessAIS import path.
-3. **Forecasting** — LightGBM 72-hour congestion forecasting with point estimates and quantile uncertainty bands, plus validation metrics.
+3. **Forecasting** — LightGBM 72-hour congestion forecasting with point estimates and quantile uncertainty bands, plus validation metrics (48h holdout, multi-origin rollouts).
 4. **Optimisation** — OR-Tools CP-SAT berth allocation + quay-crane assignment under hard physical constraints, contrasted with FIFO.
-5. **Routing** — DIVERT / SLOW_STEAM / PRIORITY_WINDOW / HOLD recommendations driven by predicted congestion and documented cost assumptions.
+5. **Routing** — DIVERT / SLOW_STEAM / PRIORITY_WINDOW / HOLD recommendations driven by predicted congestion and documented cost assumptions. *(RUBRIC-Critical)*
 6. **72-Hour Plan** — 12 × 6-hour shifts with arrivals, berthings, crane deployment, congestion alerts, decide-by deadlines and supervisor actions.
 7. **IBM Bob** — load-bearing agentic integration: IBM Bob uses the PortPulse MCP server to select and execute operational tools, receives structured engine outputs, and synthesizes the supervisor-facing decision. Tool actions are surfaced in the application. No secondary external LLM provider is used.
 8. **Impact** — earlier warning, physically constrained schedules, economically informed routing, fused shift handover and auditable engine evidence.

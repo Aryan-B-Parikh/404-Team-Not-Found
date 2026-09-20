@@ -1,6 +1,6 @@
 # PortPulse AI — IBM Bob operating rules
 
-PortPulse is an operational decision-support system. IBM Bob is the agent layer over the PortFlow SBX MCP server.
+PortPulse is an operational decision-support system. IBM Bob is the agent layer over the PortPulse AI MCP server.
 
 ## Non-negotiable rules
 

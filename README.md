@@ -26,7 +26,7 @@ Full analysis and scope: [`docs/problem-statement.md`](docs/problem-statement.md
 
 PortPulse AI forecasts congestion **before** it happens and gives a shift supervisor a physically constrained 72-hour operating plan.
 
-A **SimPy** discrete-event simulation generates a reproducible synthetic operations layer over the **REAL** Port of Long Beach terminal-capacity table. **LightGBM** forecasts congestion with quantile uncertainty bands. **Isolation Forest** detects disruptions. A composite risk score identifies the **binding resource**. **OR-Tools CP-SAT** performs berth allocation + quay-crane assignment under hard physical constraints and is contrasted with a FIFO baseline. A FastAPI gateway serves the engines to the React/Vite dashboard and to **IBM Bob**, which orchestrates the engines through MCP and produces the operational explanation.
+A **SimPy** discrete-event simulation generates a reproducible synthetic operations layer over the **REAL** Port of Long Beach terminal-capacity table. **LightGBM** forecasts congestion with quantile uncertainty bands (validated via a 48-hour holdout and multi-origin rollouts; MAE/R²/skill-vs-persistence are reported per run). **Isolation Forest** detects disruptions. A composite risk score identifies the **binding resource**. **OR-Tools CP-SAT** performs berth allocation + quay-crane assignment under hard physical constraints and is contrasted with a FIFO baseline. A FastAPI gateway serves the engines to the React/Vite dashboard and to **IBM Bob**, which orchestrates the engines through MCP and produces the operational explanation.
 
 ### The four capability pillars — and where each lives
 
@@ -60,7 +60,8 @@ Setup + registration: [`docs/bob-mcp.md`](docs/bob-mcp.md).
 - **Isolation Forest anomaly detection** — identifies operational disruption patterns and possible data errors.
 - **Resource-binding hotspot scoring** — combines queue, utilisation, variance, uncertainty and disruption signals to identify the binding resource.
 - **IBM Bob load-bearing agent** — Bob uses the MCP tools to retrieve engine-computed evidence, reason across multiple operational steps, and produce an auditable supervisor-facing decision.
-- **Operational extras** — what-if scenario simulator, real POLB reference capacity table, CSV exports, weather features and dynamic data-provenance reporting.
+- **Operational extras** — what-if scenario simulator (crane outage, productivity shock, berth add/remove, vessel bunching, schedule shift, rollback), real POLB reference capacity table, CSV exports, weather features and dynamic data-provenance reporting.
+- **Routing economics, labelled** — `est_savings_usd` figures are indicative planning estimates from linear formulas over public mid-range references; the formulas and their basis are exposed at `GET /api/routing` (`cost_model`), and external-port diversion requires an operator-supplied live port-status feed (`PORT_STATUS_JSON`).
 
 ---
 
@@ -70,7 +71,7 @@ Setup + registration: [`docs/bob-mcp.md`](docs/bob-mcp.md).
 |---|---|
 | **Languages** | Python 3.11, TypeScript |
 | **Frameworks** | FastAPI, React, Vite, Tailwind CSS, SQLAlchemy 2, LightGBM, scikit-learn, Google OR-Tools (CP-SAT), SimPy |
-| **AI agent layer** | IBM Bob, Model Context Protocol (MCP) |
+| **AI agent layer** | IBM Bob, Model Context Protocol (MCP) — Bob is the only LLM narrative provider; a deterministic template over the same engine numbers is used when the Bob agent is unavailable |
 | **Databases** | PostgreSQL (psycopg3) |
 | **Other** | Recharts, uv, NOAA AccessAIS import pipeline, Open-Meteo |
 
@@ -86,18 +87,19 @@ portpulse-ai/
 │   │   │   ├── main.py
 │   │   │   ├── mcp_server.py     # IBM Bob MCP tools/resources/prompts
 │   │   │   ├── models.py
-│   │   │   ├── reference.py       # REAL POLB terminals + constants
-│   │   │   ├── seed.py             # reference seed + SimPy layer
+│   │   │   ├── reference.py      # REAL POLB terminals + constants
+│   │   │   ├── seed.py           # reference seed + SimPy layer
 │   │   │   ├── routers/
 │   │   │   └── services/
 │   │   ├── pyproject.toml
 │   │   └── .env.example
-│   ├── frontend/                  # React + Vite dashboard
+│   ├── frontend/                 # React + Vite dashboard
 │   └── README.md
-├── .bob/                          # Bob project MCP config, rules and skill
-├── docs/                          # problem · solution · architecture · setup
-├── demo/                          # screenshots + demo video link/script
-├── presentation/                  # deck
+├── submission.yaml               # Hackathon submission manifest
+├── .bob/                         # Bob project MCP config, rules and skill
+├── docs/                         # problem · solution · architecture · setup
+├── demo/                         # screenshots + demo video link/script
+├── presentation/                 # deck (see presentation/README.md)
 ├── IMPLEMENTATION_STATUS.md
 └── CONTRIBUTING.md
 ```
@@ -131,6 +133,14 @@ npm install
 npm run dev
 ```
 
+### 🌍 Production deployment
+
+The stack deploys as two units — **frontend on Vercel**, **backend + managed PostgreSQL on Voroa**
+(GitHub-connected deploy platform): the Vercel project proxies `/api/*` and `/health` to the Voroa
+web service via `src/frontend/vercel.json` rewrites, so the browser talks to a single origin with
+no CORS setup. The backend self-bootstraps (schema + seed + weather/tide pipelines) on first boot.
+Full step-by-step guide: [`docs/deployment.md`](docs/deployment.md).
+
 **Verify:** open `http://localhost:5173`, inspect Overview / Forecast / Berth & Cranes / 72-Hr Plan, then open **Bob AI** and ask: *"What's the biggest operational risk over the next 72 hours?"*
 
 ---
@@ -143,6 +153,7 @@ npm run dev
 | 🌐 Live Demo | [`demo/live-demo-url.txt`](demo/live-demo-url.txt) |
 | 🖼️ Screenshots | [`demo/screenshots/`](demo/screenshots/) |
 | 📊 Presentation | [`presentation/portpulse_ai.pdf`](presentation/portpulse_ai.pdf) |
+| 📦 Submission manifest | [`submission.yaml`](submission.yaml) |
 
 ---
 
@@ -180,6 +191,7 @@ The strongest part of PortPulse AI is the **agentic decision loop**. IBM Bob doe
 - [`docs/solution-overview.md`](docs/solution-overview.md)
 - [`docs/architecture.md`](docs/architecture.md)
 - [`docs/setup-guide.md`](docs/setup-guide.md)
+- [`docs/deployment.md`](docs/deployment.md) — Vercel (frontend) + Voroa (backend + PostgreSQL)
 - [`src/README.md`](src/README.md)
 - [`docs/bob-mcp.md`](docs/bob-mcp.md)
 - [`docs/api-contract.md`](docs/api-contract.md)

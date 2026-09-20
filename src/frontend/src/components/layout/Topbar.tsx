@@ -63,7 +63,7 @@ export function Topbar({
         )}
         <div className="min-w-0">
           <h1 className="text-sm sm:text-base md:text-lg font-semibold text-[var(--text-primary)] tracking-tight truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">
-            {activeTitle || "PortFlow SBX"}
+            {activeTitle || "PortPulse AI"}
           </h1>
           {activeSubtitle && (
             <p className="text-xs text-[var(--text-secondary)] truncate hidden sm:block">{activeSubtitle}</p>

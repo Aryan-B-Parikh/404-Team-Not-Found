@@ -1,4 +1,4 @@
-"""SQLAlchemy ORM models — the PortFlow SBX / PortPulse AI data model.
+"""SQLAlchemy ORM models — the PortPulse AI data model.
 
 Implements the entity flow from the requirements doc §18:
   Terminal -> Berth/Crane/YardZone/Gate -> VesselCall (+EtaRevision)

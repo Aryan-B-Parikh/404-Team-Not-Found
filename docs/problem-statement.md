@@ -76,4 +76,4 @@ Explicitly out of scope: customs clearance, pricing/rating, carbon tracking, yar
 - Item 4 is **structured output** (JSON + human-readable shift text) a supervisor could actually print for handover, with visible assumptions and confidence levels.
 - All four are reachable **from the dashboard** and **through Bob**, the AI ops assistant that invokes the engines and answers strictly from their output.
 
-PortFlow SBX implements all four items end-to-end; the mapping to code, API and UI is in [`README.md`](../README.md) and [`docs/architecture.md`](architecture.md).
+PortPulse AI implements all four items end-to-end; the mapping to code, API and UI is in [`README.md`](../README.md) and [`docs/architecture.md`](architecture.md).

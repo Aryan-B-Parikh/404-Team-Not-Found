@@ -15,7 +15,7 @@
 | Optimisation (Berth/Crane) | Google OR-Tools (CP-SAT) for the Berth Allocation Problem / Quay Crane Assignment Problem as a constraint-satisfaction / MIP model |
 | Simulation (synthetic ops data) | SimPy discrete-event simulation for berth/crane/yard/gate state generation |
 | Database | PostgreSQL for relational entities, TimescaleDB extension (or plain partitioned tables) for AIS/time-series |
-| LLM layer | Claude via API — used only for the 72-hour plan narrative and explanation text, never for numeric scheduling |
+| LLM layer | LLM via the agent layer — used only for the 72-hour plan narrative and explanation text, never for numeric scheduling (shipped as IBM Bob via MCP; deterministic fallback) |
 | Data pipeline | Python scripts / lightweight Airflow-style DAG for batch loads (AIS, BTS, weather) |
 
 ---

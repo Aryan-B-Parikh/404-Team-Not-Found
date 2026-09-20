@@ -1,4 +1,4 @@
-"""PortFlow SBX — MCP server for IBM Bob.
+"""PortPulse AI — MCP server for IBM Bob.
 
 Exposes the operational engines as Model Context Protocol tools so IBM Bob can
 actually execute forecasts, anomaly detection, hotspot ranking, CP-SAT berth /
@@ -19,7 +19,7 @@ from .services import bob as bob_svc
 from .services import pipeline
 
 mcp = MCPServer(
-    name="PortFlow SBX", version="0.1.0",
+    name="PortPulse AI", version="0.1.0",
     instructions=(
         "PortPulse AI San Pedro Bay operations decision support. Tools return engine-computed numbers. "
         "For operational questions, use tools before answering and never invent figures. "
@@ -319,7 +319,7 @@ def disruption_response(crane_factor: float = 0.75) -> str:
 
 
 def main(argv: list[str] | None = None) -> None:
-    p = argparse.ArgumentParser(prog="app.mcp_server", description="PortFlow SBX MCP server for IBM Bob")
+    p = argparse.ArgumentParser(prog="app.mcp_server", description="PortPulse AI MCP server for IBM Bob")
     p.add_argument("--http", nargs="?", const=8765, type=int, default=None)
     args = p.parse_args(argv)
     mcp.run(

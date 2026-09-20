@@ -1,6 +1,6 @@
 ---
 name: port-operations-response
-description: Analyze San Pedro Bay congestion, disruptions, berth/crane constraints, routing decisions, and shift actions using PortFlow SBX MCP tools.
+description: Analyze San Pedro Bay congestion, disruptions, berth/crane constraints, routing decisions, and shift actions using PortPulse AI MCP tools.
 ---
 
 When the user asks for an operational decision:

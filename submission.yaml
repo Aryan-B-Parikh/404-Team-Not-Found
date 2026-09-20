@@ -1,0 +1,85 @@
+# =============================================================================
+# Hackathon submission manifest — PortPulse AI
+# =============================================================================
+# Single source of truth for judges and submission automation. Keep every field
+# in sync with README.md and the demo artifacts before final submission.
+
+# ── Identification ────────────────────────────────────────────────────────────
+project:
+  name: PortPulse AI
+  tagline: Container congestion predictor & port operations optimiser for San Pedro Bay
+  repository: https://github.com/Aryan-B-Parikh/404-Team-Not-Found
+  video_url: https://youtu.be/PS7Ze88sNBM   # mirrors demo/demo-video-link.txt
+  live_demo: null                           # not deployed — run locally (docs/setup-guide.md)
+
+# ── Team ──────────────────────────────────────────────────────────────────────
+team:
+  name: ElevateX
+  members:
+    - name: Aryan Parikh
+      role: Team Lead
+      email: 24ce070@charusat.edu.in
+      github: Aryan-B-Parikh
+    - name: Mahima Kukadiya
+      role: Contributor
+      email: 24ce058@charusat.edu.in
+    - name: Dhruvi Kanabar
+      role: Contributor
+      email: 24ce050@charusat.edu.in
+    - name: Om Mistry
+      role: Contributor
+      email: 24ce065@charusat.edu.in
+
+# ── IBM Bob (agentic requirement) ─────────────────────────────────────────────
+bob:
+  integration: MCP (Model Context Protocol), load-bearing in both directions
+  server: src/backend/app/mcp_server.py
+  tools: 12
+  resources: 4
+  prompts: 3
+  fallback: deterministic engine-grounded template over the same engine outputs
+  docs: docs/bob-mcp.md
+
+# ── How to run (judges) ───────────────────────────────────────────────────────
+run:
+  one_command: ./scripts/dev.sh             # seeds if empty; backend :8000 + frontend :5173
+  manual: docs/setup-guide.md
+  requirements:
+    - Python 3.11 (uv)
+    - Node.js 20
+    - PostgreSQL (database name `portflow`)
+  optional:
+    - BOB_API_KEY (enables the live IBM Bob agent; deterministic fallback without it)
+
+# ── Artifacts ─────────────────────────────────────────────────────────────────
+artifacts:
+  deck: presentation/portpulse_ai.pdf
+  video: demo/demo-video-link.txt
+  live_url: demo/live-demo-url.txt          # states the demo is local-only
+  screenshots: demo/screenshots/
+  status_report: IMPLEMENTATION_STATUS.md
+  docs_index:
+    - docs/problem-statement.md
+    - docs/solution-overview.md
+    - docs/architecture.md
+    - docs/submission-scope.md
+    - docs/bob-mcp.md
+    - docs/api-contract.md
+
+# ── Capability summary ────────────────────────────────────────────────────────
+capabilities:
+  observe: SimPy discrete-event operations layer over the REAL POLB terminal-capacity table
+  predict: LightGBM 24/48/72h congestion forecast with quantile uncertainty + validation
+  explain: Isolation Forest anomalies, composite hotspot risk with binding-resource attribution
+  optimise: OR-Tools CP-SAT berth allocation + quay-crane assignment (hard constraints) vs FIFO baseline
+  decide: alternate routing (DIVERT / SLOW_STEAM / PRIORITY_WINDOW / HOLD) with labelled indicative economics
+  act: 12-shift / 72-hour operating plan with provenance, confidence and CSV export
+  ask: IBM Bob via MCP — selects and executes the real engines, then explains the outputs
+
+# ── Data honesty ──────────────────────────────────────────────────────────────
+data_honesty:
+  real: Port of Long Beach terminal/berth/crane/yard/gate reference capacity (hard constraints)
+  synthetic: DEMO_AIS operational history (reproducible, explicitly labelled, surfaced in the UI)
+  importable: NOAA AccessAIS CSV via POST /api/ais/import (labelled AIS)
+  weather: Open-Meteo pipeline (graceful fallback when unreachable)
+  economics: routing savings are indicative planning estimates; formulas exposed at GET /api/routing

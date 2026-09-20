@@ -10,7 +10,24 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from .config import get_settings
 
 settings = get_settings()
-engine = create_engine(settings.database_url, echo=settings.db_echo, pool_pre_ping=True, future=True)
+
+
+def _normalise_database_url(url: str) -> str:
+    """Map managed-Postgres URL schemes onto the psycopg3 driver.
+
+    Managed providers (Voroa/Render/Heroku) hand out ``postgresql://`` or
+    ``postgres://`` URLs; SQLAlchemy's default dialect would try psycopg2, which
+    is not installed. Rewrite them to ``postgresql+psycopg://`` (psycopg3). An
+    explicit ``+psycopg`` in the URL is preserved.
+    """
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url
+
+
+engine = create_engine(_normalise_database_url(settings.database_url), echo=settings.db_echo, pool_pre_ping=True, future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False, future=True)
 
 

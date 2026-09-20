@@ -4,7 +4,7 @@
 [data-theme="dark"],
 .dark {
   /* ==========================================================================
-     PORTFLOW SBX — MARITIME INTELLIGENCE PALETTE (DARK MODE)
+     PORTPULSE AI — MARITIME INTELLIGENCE PALETTE (DARK MODE)
      True near-black charcoal surfaces with restrained ocean/steel blue accents
      (85-90% neutral dark/charcoal, 10-15% ocean-blue accents)
      ========================================================================== */
@@ -94,7 +94,7 @@
 [data-theme="light"],
 .light {
   /* ==========================================================================
-     PORTFLOW SBX — MARITIME INTELLIGENCE PALETTE (LIGHT MODE)
+     PORTPULSE AI — MARITIME INTELLIGENCE PALETTE (LIGHT MODE)
      Clean, calm enterprise logistics room with crisp white cards and ocean blue
      ========================================================================== */
   --bg-app: #F4F7F8;

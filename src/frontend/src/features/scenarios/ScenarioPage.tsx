@@ -83,7 +83,7 @@ export default function ScenarioPage({ onNavigateTab }: ScenarioPageProps) {
       {/* Page Header */}
       <PageHeader
         title="What-If Scenario Simulation & Stress Testing"
-        description="Parametric stress-testing against baseline OR-Tools CP-SAT discrete solver. Simulate quay crane outages and productivity shocks."
+        description="Parametric stress-testing against baseline OR-Tools CP-SAT re-optimisation. Crane outages, productivity shocks, berth add/remove, vessel bunching and schedule shifts are supported engine-side (POST /api/scenarios/extended); this page drives the parametric presets."
         breadcrumbs={["Analysis", "Scenarios"]}
         status={
           <div className="flex items-center gap-1.5">

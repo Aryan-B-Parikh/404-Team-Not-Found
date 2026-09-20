@@ -2,7 +2,7 @@ import type { StyleSpecification } from "maplibre-gl";
 import { defaultMapProvider } from "./MapProvider";
 
 /**
- * PortFlow SBX — Map Style Generator
+ * PortPulse AI — Map Style Generator
  * Returns the active provider's style: a hosted vector style URL when the
  * provider supplies one (OpenFreeMap Positron, keyless), otherwise a locally
  * built restrained raster style. Works without user API keys.
@@ -18,7 +18,7 @@ export function createMaritimeMapStyle(theme: "dark" | "light"): StyleSpecificat
 
   return {
     version: 8,
-    name: isDark ? "PortFlow SBX Dark Maritime" : "PortFlow SBX Light Maritime",
+    name: isDark ? "PortPulse AI Dark Maritime" : "PortPulse AI Light Maritime",
     sources: {
       [tileSource.id]: {
         type: "raster",

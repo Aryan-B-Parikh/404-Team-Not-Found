@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BIN_DIR="${ROOT_DIR}/bin"
 PGDATA="${ROOT_DIR}/pgdata"
 
-echo "=== PortFlow SBX Service Status ==="
+echo "=== PortPulse AI Service Status ==="
 
 # Database
 if "${BIN_DIR}/pg_isready" -h "${PGDATA}" -p 5432 >/dev/null 2>&1; then

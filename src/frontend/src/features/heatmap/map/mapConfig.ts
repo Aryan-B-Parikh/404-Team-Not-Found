@@ -1,5 +1,5 @@
 /**
- * PortFlow SBX — Map Configuration
+ * PortPulse AI — Map Configuration
  * Geographic bounds, operational coordinates, and restrained congestion thresholds.
  */
 

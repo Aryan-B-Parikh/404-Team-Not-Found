@@ -1,4 +1,4 @@
-# Implementation Status — PortFlow SBX vs. the 3 Specification Documents
+# Implementation Status — PortPulse AI vs. the 3 Specification Documents
 
 **Method:** static inspection of the actual code under `src/` **plus** live execution — the FastAPI
 service was run, seeded into PostgreSQL, and every endpoint exercised (forecast, CP-SAT solve, routing,
@@ -32,9 +32,9 @@ The remaining gaps are feature-depth items (a few modules) rather than stack div
 | Optimisation (BAP/QCAP) | Google OR-Tools **CP-SAT** | **OR-Tools CP-SAT** (`services/optimiser.py`) — verified `OPTIMAL`/`FEASIBLE`, ~0.3–8 s | ✅ |
 | Simulation | **SimPy** discrete-event | **SimPy** berth resources (`services/simulation.py`) | ✅ |
 | Database | PostgreSQL + TimescaleDB *or plain tables* | **PostgreSQL** via SQLAlchemy 2 + psycopg3 (plain tables — plan-allowed) | ✅ |
-| LLM layer | Claude, phrasing only | **Anthropic Claude** in `services/llm.py`, strictly grounded, deterministic fallback | ✅ |
+| LLM layer | LLM phrasing only | **IBM Bob** in `services/llm.py` (sole provider; `services/bob_agent.py`), strictly grounded, deterministic engine-data fallback | ✅ |
 | Data pipeline | Python batch loads (AIS, BTS, weather) | SimPy layer ✅ + AIS pipeline ✅ + **Open-Meteo weather pipeline** ✅ + BTS parser ✅ | ✅ |
-| Agent (IBM Bob) | IBM Bob as an MCP client | `app/mcp_server.py` — **11 tools + 4 resources + 2 prompts**, tested via a local MCP client | ✅ |
+| Agent (IBM Bob) | IBM Bob as an MCP client | `app/mcp_server.py` — **12 tools + 4 resources + 3 prompts**, tested via a local MCP client | ✅ |
 
 **Verified running:** `build_full` (forecast→anomaly→hotspot→optimiser→routing→plan) executes end-to-end;
 `/api/*` return live engine data; Vite proxies `/api` and renders the dashboard.
@@ -53,10 +53,10 @@ The remaining gaps are feature-depth items (a few modules) rather than stack div
 | **F** Congestion Forecasting | 24/48/72h queue/wait/**yard util**, ML, uncertainty band, reproducible, **weather signal** | `forecasting.py` LightGBM, 4 targets, quantile 0.1/0.9 bands, multi-origin validation, **model_version**, **weather_used flag** when `FEATURE_WEATHER=true` | ✅ | — |
 | **G** Hotspot / Bottleneck | binding resource + composite risk score + ranking | `hotspot.py`: w1..w5 risk score, `binding_constraint` (BERTH/CRANE/YARD/GATE), confidence degradation | ✅ | — |
 | **H** Anomaly / Disruption | bunching/outage/weather, robust method, disruption-vs-data-error, min sample | `anomaly.py`: IsolationForest, KIND classifier, `DATA_ERROR` distinction, `MIN_SAMPLES` guard | ✅ | weather-driven anomaly detection |
-| **I** Alternate Routing | windows/terminals/ports, trade-off, sustained congestion, feasibility | `routing.py`: DIVERT/SLOW_STEAM/PRIORITY_WINDOW/HOLD, alt-port table, **sustained** check, LOA feasibility | 🟡 | alternate in-port terminals / berthing windows |
+| **I** Alternate Routing | windows/terminals/ports, trade-off, sustained congestion, feasibility | `routing.py`: DIVERT/SLOW_STEAM/PRIORITY_WINDOW/HOLD, in-port terminal alternatives, alt-port table gated on the operator-supplied `PORT_STATUS_JSON` live feed (static table used for physical feasibility only), **sustained** check, LOA feasibility, **exposed cost model + formulas** (`/api/routing` `cost_model`) | 🟡 | berth-booking windows inside the port |
 | **J** Berth/Crane Optimiser | BAP/QCAP exact, hard constraints, soft objectives, exposed weights, **tidal windows**, **incremental** | `optimiser.py`: **CP-SAT**, hard LOA/depth/reach + `AddNoOverlap` + `AddCumulative`, FIFO baseline, exposed weights; **tidal toggle wired** to API; **incremental warm-start** wired | ✅ | — |
-| **K** 72h Plan | shift plan from F–J, LLM phrases only, cite runs, confidence | `plan.py` 12×6h shifts + run ids + model version; `llm.py` Claude narrative; **per-horizon confidence badges** in UI | ✅ | — |
-| **L** Scenario Simulator | berth add/remove, outage, bunching, baseline compare, clone/rollback | `/api/optimise` + `/api/scenarios` (crane outage/productivity), persisted `Scenario`+`ImpactAssessment` | 🟡 | berth add/remove, bunching event, clone/rollback UI |
+| **K** 72h Plan | shift plan from F–J, LLM phrases only, cite runs, confidence | `plan.py` 12×6h shifts + run ids + model version; `llm.py` Bob narrative; **per-horizon confidence badges** in UI | ✅ | — |
+| **L** Scenario Simulator | berth add/remove, outage, bunching, baseline compare, clone/rollback | `/api/scenarios` (crane outage/productivity) + `/api/scenarios/extended` (**6 kinds**: crane outage, productivity shock, **berth add/remove, vessel bunching, schedule shift**) + `POST /api/scenarios/{id}/rollback`; scenario-specific re-forecast + CP-SAT re-solve; persisted `Scenario`+`ImpactAssessment` | 🟡 | clone/rollback **UI** (API shipped) |
 | **M** Explainability | evidence per decision, confidence, assumptions | risk `explanation`, routing `rationale`, model card, feature importance, objective weights exposed | 🟡 | surface the *binding constraint* per assignment in the UI |
 | **N** Dashboard | KPI, heatmap, Gantt, timeline, before/after, drill-down | React dashboard: **zone heatmap matrix** (24h × 4 zones), KPI strip, zone drill-down, LightGBM chart with **4-target switcher + 80% bands**, **72h Gantt** with tidal shading, routing cards, 12 shift cards with confidence, Bob chat with action chips | ✅ | port→terminal→berth→vessel drill-down; dedicated scenario-compare view |
 
@@ -111,14 +111,14 @@ The remaining gaps are feature-depth items (a few modules) rather than stack div
 
 | Surface | Implementation | Status |
 |---|---|---|
-| IBM Bob → our engines (MCP) | `app/mcp_server.py`: 11 tools, 4 resources, 2 prompts; registered with Bob (`bob mcp list`) | ✅ verified live (`mcp__portflow__rank_hotspots` → success) |
-| Our app → IBM Bob | `services/bob_agent.py` runs the real Bob agent (`bob run --format stream-json`); `services/llm.py` resolves provider bob→claude→deterministic | ✅ verified: `provider=bob · mode=llm · actions=['mcp__portflow__rank_hotspots']` |
+| IBM Bob → our engines (MCP) | `app/mcp_server.py`: 12 tools, 4 resources, 3 prompts; registered with Bob (`bob mcp list`) | ✅ verified live (`mcp__portflow__rank_hotspots` → success) |
+| Our app → IBM Bob | `services/bob_agent.py` runs the real Bob agent (`bob run --format stream-json`); `services/llm.py` resolves provider bob→deterministic (no secondary LLM provider) | ✅ verified: `provider=bob · mode=llm · actions=['mcp__portflow__rank_hotspots']` |
 | Grounding | answers use ONLY engine data (Bob fetches it via MCP); `actions` lists the tools run; deterministic fallback | ✅ |
 | Recursion guard | `PORTFLOW_NO_BOB_AGENT=1` inherited by the MCP child | ✅ |
 
 **Honest note:** IBM Bob is wired **both** ways and verified end-to-end on this machine (Bob CLI 2.0.2,
 `BOB_API_KEY` supplied via the environment only — never committed). Without the key the narrative layer
-falls back to Claude, then to a deterministic template over the same engine numbers.
+falls back to a deterministic template over the same engine numbers — there is no secondary external LLM provider.
 
 ## 5b. What is DONE (verified running)
 
@@ -127,9 +127,9 @@ falls back to Claude, then to a deterministic template over the same engine numb
 - Isolation Forest anomaly detector (bunching/outage/yard/data-error).
 - Composite hotspot risk score with binding-resource attribution.
 - OR-Tools CP-SAT BAP/QCAP with hard constraints + FIFO baseline + measured deltas (CP-SAT ran `OPTIMAL`/`FEASIBLE`; e.g. −19 % total wait, −55 h makespan vs FIFO on the seeded instance).
-- Routing recommender (4 options, sustained check, cost model), 72h plan, Claude narrative + deterministic fallback.
-- **MCP server** exposing 11 engine tools + resources + prompts for IBM Bob, verified with a local MCP client.
-- FastAPI gateway (12 routes), PostgreSQL persistence of every run, CSV export, caching (22 s → 1.7 s).
+- Routing recommender (4 options, sustained check, exposed indicative cost model), 72h plan, Bob narrative + deterministic fallback.
+- **MCP server** exposing 12 engine tools + 4 resources + 3 prompts for IBM Bob, verified with a local MCP client.
+- FastAPI gateway (29 endpoint operations), PostgreSQL persistence of every run, CSV export, caching (22 s → 1.7 s).
 - **Weather pipeline** (Open-Meteo): startup auto-refresh, `/api/weather/refresh`, `weather_used` flag in forecast.
 - **Data Quality page**: per-terminal completeness bars, missing-field chips, live weather table, CSV upload with error display.
 - **Overview tab**: zone congestion heatmap matrix (4 terminals × 24h), KPI strip, drill-down panel, sparklines.
@@ -154,6 +154,7 @@ falls back to Claude, then to a deterministic template over the same engine numb
 
 - The optimiser is now a **real exact solver (CP-SAT)** — not a heuristic. It enforces berth length/depth, crane reach, no berth overlap and the terminal crane-pool capacity.
 - The vessel queue is seeded by the **SimPy simulation** and the 14-day congestion history by the synthetic generator, **both explicitly labelled `source="DEMO_AIS"`** (and surfaced as such in the UI). Nothing auto-generates at startup: the demo history loads once on empty-DB seed, real AccessAIS CSVs arrive via `POST /api/ais/import` (which triggers the data-quality pass), and the demo history can be regenerated via `POST /api/ais/generate`.
-- **Claude is optional and used only to phrase** validated numbers; without a key Bob/plan use a deterministic template over the same engine output.
+- **No secondary LLM is used**: Bob phrases the validated numbers; without the Bob agent, plan/Q&A use a deterministic template over the same engine output.
 - The scenario is deliberately oversubscribed, so CP-SAT trades some average wait against makespan; **cargo volume is not in the spec objective** (reported for transparency).
+- The routing layer's `est_savings_usd` figures are **indicative planning estimates**: linear formulas over public mid-range references (`reference.py`), not carrier quotes or berth-fee quotations; external-port diversion additionally requires the operator-supplied `PORT_STATUS_JSON` feed. Formulas are exposed at `GET /api/routing` (`cost_model`).
 - `wave_height` is fetched from the Open-Meteo marine API (`marine-api.open-meteo.com/v1/marine`) as a separate non-fatal call in `pipelines/weather.py`.
