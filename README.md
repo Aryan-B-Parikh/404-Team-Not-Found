@@ -135,12 +135,11 @@ npm run dev
 
 ### 🌍 Production deployment
 
-The stack deploys as three units — **frontend on Vercel**, **FastAPI backend on Voroa**, and
-**PostgreSQL on Supabase** (already provisioned and seeded): the Vercel project proxies `/api/*`
-and `/health` to the Voroa web service via `src/frontend/vercel.json` rewrites, so the browser
-talks to a single origin with no CORS setup. The backend self-bootstraps (schema + seed +
-weather/tide pipelines) against the Supabase pooler on first boot.
-Full step-by-step guide: [`docs/deployment.md`](docs/deployment.md).
+The stack deploys as **two units, both on Vercel** — the React SPA (`portpulse-ai-woad.vercel.app`)
+and the FastAPI backend as a serverless Python function (`portpulse-api.vercel.app`) — with
+**PostgreSQL on Supabase** (already provisioned and seeded). The frontend proxies `/api/*` and
+`/health` to the backend via `src/frontend/vercel.json` rewrites, so the browser talks to a single
+origin with no CORS setup. Full guide: [`docs/deployment.md`](docs/deployment.md).
 
 **Verify:** open `http://localhost:5173`, inspect Overview / Forecast / Berth & Cranes / 72-Hr Plan, then open **Bob AI** and ask: *"What's the biggest operational risk over the next 72 hours?"*
 

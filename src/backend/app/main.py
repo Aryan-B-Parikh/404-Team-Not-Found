@@ -91,6 +91,13 @@ def health():
     return {"status": "ok"}
 
 
+# Serverless alias: Vercel's Python builder only routes /api/* to the function,
+# so the same health payload is exposed under the /api prefix.
+@app.get("/api/health", tags=["meta"], response_model=HealthResponse, include_in_schema=False)
+def health_api():
+    return {"status": "ok"}
+
+
 if _DIST.is_dir():
     from fastapi.responses import FileResponse
 

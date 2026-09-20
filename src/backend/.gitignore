@@ -1,3 +1,5 @@
 
 # LightGBM model cache
 .model_cache/
+.vercel
+.env*

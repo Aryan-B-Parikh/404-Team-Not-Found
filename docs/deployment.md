@@ -1,161 +1,117 @@
-# Deployment — Vercel (frontend) + Voroa (backend) + Supabase (PostgreSQL)
+# Deployment — Vercel (frontend + backend) + Supabase (PostgreSQL)
 
-PortPulse AI ships as three deployable units:
+PortPulse AI ships as two deployable units, both on Vercel:
 
 ```text
-┌────────────────────────────┐         ┌─────────────────────────────────┐
-│  Vercel — frontend (SPA)   │  /api/* │  Voroa — FastAPI web service    │
-│  React + Vite build        │ ──────► │  uvicorn app.main:app           │
-│  portpulse-ai.vercel.app   │ /health │      │                          │
-└────────────────────────────┘         │      ▼                          │
-                                       │  Supabase — managed PostgreSQL  │
-                                       │  (pooler :6543 / direct :5432)  │
-                                       └─────────────────────────────────┘
+┌───────────────────────────────┐  /api/*  ┌──────────────────────────────────┐
+│  Vercel — frontend (SPA)      │ ───────► │  Vercel — FastAPI serverless fn  │
+│  portpulse-ai-woad.vercel.app │  /health │  portpulse-api.vercel.app        │
+└───────────────────────────────┘          │            │                     │
+                                           │            ▼                     │
+                                           │  Supabase — PostgreSQL 17        │
+                                           │  (pooler :5432, sslmode=require) │
+                                           └──────────────────────────────────┘
 ```
 
-The Vercel deployment proxies `/api/*` and `/health` to the Voroa backend via
+**Live:** frontend `https://portpulse-ai-woad.vercel.app` · backend
+`https://portpulse-api.vercel.app` (`/api/health` → `{"status":"ok"}`).
+
+The frontend proxies `/api/*` and `/health` to the backend via
 `src/frontend/vercel.json` rewrites, so the browser only ever talks to one origin —
-no CORS configuration is required, and the relative-path API client
-(`src/frontend/src/lib/api.ts`) works unchanged.
+no CORS setup, and the relative-path API client (`src/frontend/src/lib/api.ts`)
+works unchanged.
 
-The backend **self-bootstraps**: on startup it creates the schema, seeds the REAL POLB
-reference data + the `DEMO_AIS` simulation layer if the database is empty, and refreshes
-the tides/weather pipelines and the data-quality pass (`src/backend/app/main.py` lifespan).
-No manual seed step is needed on a fresh database, though the first request can be slower.
-
-Managed-Postgres URLs (`postgresql://…` / `postgres://…`) are normalised to the
-psycopg3 driver (`postgresql+psycopg://…`) by `src/backend/app/db.py`.
+The backend connects to Supabase over the session pooler; managed-Postgres URL
+schemes are normalised to psycopg3 in `src/backend/app/db.py`, and `DB_SSL=true`
+forces `sslmode=require`. The database was provisioned and seeded out-of-band
+(see §1); the backend also self-seeds an empty database on startup.
 
 ---
 
-## 1. Database on Supabase (done — provisioned)
+## 1. Database on Supabase (done — provisioned & seeded)
 
 A dedicated **portpulse-ai** Supabase project (ref `fxdclkjneuoelggoralu`, region
-`ap-south-1`) is already provisioned and **fully seeded** (REAL POLB reference data +
-DEMO_AIS simulation layer). The app role is `portpulse_app`; its credentials live in
-the Voroa environment variables — never in the repository.
+`ap-south-1`, PostgreSQL 17) holds the data. The app role is `portpulse_app`
+(created by the `create_portpulse_app_role` migration with DDL rights on
+`public`); its credentials live only in the Vercel environment variables.
 
-For a **new** Supabase project instead:
+Connection string shape (note the **project ref in the username** — required by
+Supavisor):
 
-1. Create the project (free tier, region close to the backend).
-2. Create the app role with DDL rights on `public` (see `docs/deployment.md` history
-   or run the backend seed once as `postgres`), then set `DATABASE_URL` to the
-   **session pooler** string — username must carry the project ref:
-   `postgresql+psycopg://<user>.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require`
-3. The backend self-seeds an empty database on startup (`--reset` wipes and re-seeds).
+```
+postgresql+psycopg://portpulse_app.<project-ref>:<password>@aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
+```
 
-> ⚠️ Supabase free-tier projects **pause after ~7 days of inactivity**; the deployed
-> backend keeps it active while it runs. Restore a paused project from the dashboard.
+> ⚠️ Supabase free-tier projects **pause after ~7 days of inactivity**; the running
+> backend keeps this one active. Restore a paused project from the Supabase dashboard.
 
-### 1.2 Create the web service
-
-1. **Connect GitHub** and grant Voroa access to `Aryan-B-Parikh/404-Team-Not-Found`.
-2. **New service → Web service**, pick the repository and the `main` branch.
-3. Set the **Root directory** to `src/backend` if the dashboard offers one; otherwise
-   prefix the commands below with `cd src/backend && `.
-4. Build and start commands (Python 3.11):
-
-   ```bash
-   # Build command
-   pip install --upgrade pip && pip install -e .
-
-   # Start command (reads $PORT from the platform)
-   uvicorn app.main:app --host 0.0.0.0 --port $PORT
-   ```
-
-   > `pip install -e .` installs from `src/backend/pyproject.toml`. If Voroa has a
-   > Python version selector, choose **3.11** (`requires-python = "==3.11.*"`).
-
-5. **Environment variables**:
-
-   | Key | Value |
-   |---|---|
-   | `DATABASE_URL` | `postgresql+psycopg://portpulse_app.<ref>:<password>@aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require` (Supabase session pooler; username carries the project ref) |
-   | `DB_PGBOUNCER` | `true` only for the transaction pooler `:6543` (disables prepared statements); not needed on `:5432` |
-   | `DB_SSL` | `true` (or rely on the `sslmode=require` in the URL) |
-   | `PORT` | leave unset — Voroa injects it; the start command reads it |
-   | `CORS_ORIGINS` | `https://<your-vercel-domain>` (harmless with the proxy, correct if you ever call the API cross-origin) |
-   | `LLM_PROVIDER` | `auto` |
-   | `BOB_API_KEY` | set only if the IBM Bob agent mode is available on the host (the `bob` CLI must also be installed); without it the app uses the deterministic engine-grounded fallback |
-   | `SIM_SEED` | `20240817` (reproducible demo dataset) |
-   | `FEATURE_WEATHER` / `FEATURE_QUALITY` / `FEATURE_UPLOAD` / `FEATURE_TIDAL` / `FEATURE_INCREMENTAL` / `FEATURE_SCENARIOS_EXT` | `true` |
-
-6. **Health check path**: `/health` — the app exposes it and only answers once the
-   startup bootstrap (schema/seed/pipelines) is done. If the first deploy exceeds the
-   startup window, raise **Startup timeout** in Settings (the seeding + LightGBM
-   warm-up can take a couple of minutes on a cold host).
-7. **Deploy.** Watch the build log; on success the service is live at
-   `https://<service-name>.getvoroa.com`.
-8. Verify: open `https://<service-name>.getvoroa.com/health` → `{"status": "ok"}`,
-   then `…/api/overview` → live KPI JSON. The startup log should show
-   `[startup] operational dataset: DEMO_AIS (…)`.
-9. Turn on **auto-deploy** so pushes to `main` ship automatically.
-
-> ⚠️ **Cold starts are real.** The first forecast/optimise call after a deploy trains
-> LightGBM and solves CP-SAT (~11 s forecast, ~20–30 s full plan). Warm/cached requests
-> are ~1 s. Prewarm by opening the dashboard once before a demo.
-
-### 1.3 Bob / MCP on the deployed backend (optional)
-
-The MCP server (`src/backend/app/mcp_server.py`) is registered with IBM Bob from the
-developer machine via `.bob/mcp.json`, which points at a local `uv` command. A deployed
-Bob integration needs Bob to reach a publicly reachable MCP endpoint (e.g. an HTTP/SSE
-transport) — that is a Phase-2 item. The dashboard's Bob surface will use the
-deterministic engine-grounded fallback on Voroa unless the `bob` CLI and key are
-available on the host. This is stated honestly in `IMPLEMENTATION_STATUS.md` and
-`submission.yaml`.
+To re-seed from a machine with the repo: run `python -m app.seed --reset` in
+`src/backend` with `DATABASE_URL` set to the pooler string above (username must
+include the project ref). The backend also auto-seeds an empty database on startup.
 
 ---
 
-## 2. Frontend on Vercel
+## 2. Backend on Vercel (serverless Python function)
 
-1. **Add New… → Project** in Vercel, import `Aryan-B-Parikh/404-Team-Not-Found`.
-2. Configure the project:
-   - **Root Directory**: `src/frontend`
-   - **Framework Preset**: Vite (Vercel auto-detects; `vercel.json` pins the commands)
-   - **Build Command**: `npm run build` · **Output**: `dist`
-3. **Before the first deploy**, edit `src/frontend/vercel.json` and replace
-   `PORTPULSE-BACKEND-URL` (2 occurrences) with your Voroa service name from step 1,
-   e.g. `https://portpulse-api.getvoroa.com`. Commit and push — Vercel redeploys.
-4. Deploy. The SPA is served at `https://<project>.vercel.app`; deep links
-   (`/berth`, `/forecast`, …) are rewritten to `index.html`, and `/api/*` + `/health`
-   are proxied to Voroa.
-5. Verify: open the dashboard, check the Overview KPIs are **live numbers**, then ask
-   Bob: *"What's the biggest operational risk over the next 72 hours?"*
-6. Update the deployment metadata:
-   - `demo/live-demo-url.txt` → the Vercel URL (replacing "NOT DEPLOYED")
-   - `submission.yaml` → `live_demo:` field
+Deployed via CLI from `src/backend`: `vercel link --project portpulse-api`, then
+`vercel deploy --prod`. Key facts:
+
+- **Entry point** `src/backend/api/index.py` exposes the FastAPI `app`; Vercel's
+  Python builder routes `/api/*` to it natively. Do **not** add a catch-all
+  rewrite to the function — Vercel replaces the ASGI scope path with the
+  destination, and every route 404s (this cost us a debugging session).
+- **`/health` is mirrored at `/api/health`** because only `/api/*` reaches the
+  function; the frontend proxy targets `/health` at the backend's `/api/health`
+  via its own rewrite of the same path shape.
+- **`libgomp.so.1` is missing** in Vercel's Python runtime (LightGBM/sklearn need
+  OpenMP). We vendor GCC-12's `libgomp.so.1` in `app/lib/` and preload it with
+  `RTLD_GLOBAL` in `app/__init__.py` before any engine import.
+- **Env vars** (production scope): `DATABASE_URL` (pooler string above),
+  `DB_SSL=true`, `CORS_ORIGINS=https://portpulse-ai-woad.vercel.app`,
+  `SIM_SEED=20240817`.
+- **Performance:** the first cold request pays function boot + imports +
+  LightGBM warm-up (~10–20 s; the forecast engine then trains from Supabase
+  data). Warm requests are fast. Hobby-plan function cap is 2048 MB, and the
+  builder runs Python 3.12 — so `pyproject.toml` uses `requires-python = ">=3.11"`
+  (do not re-pin `==3.11.*`; the builder has no 3.11).
 
 ---
 
-## 3. Post-deploy checklist
+## 3. Frontend on Vercel (SPA)
 
-- [ ] `https://<voroa>.getvoroa.com/health` returns `{"status": "ok"}`
-- [ ] `/api/overview` returns live engine data (not stubs)
-- [ ] Vercel dashboard renders the same KPI values through the proxy
-- [ ] Forecast tab shows quantile bands; Berth & Cranes shows the CP-SAT vs FIFO delta
-- [ ] Scenario run + rollback works (`POST /api/scenarios/extended` → `/rollback`)
-- [ ] Weather badge present (Open-Meteo reachable from the host)
-- [ ] `demo/live-demo-url.txt` + `submission.yaml` updated
-- [ ] Bob status: `GET /api/bob/status` shows the expected provider/fallback mode
+Deployed via CLI from `src/frontend` (`vercel link --project portpulse-ai`,
+`vercel deploy --prod`), or by importing the repo in the Vercel dashboard with
+**Root Directory: `src/frontend`**. `src/frontend/vercel.json` pins the Vite
+build (`npm run build` → `dist`) and the rewrites:
 
-## 4. Cost / plan notes
+- `/health` → backend `/api/health`
+- `/api/:path*` → backend `/api/:path*`
+- everything else → `/index.html` (SPA deep links)
 
-- **Supabase free tier** hosts the database ($0/month; the project is already seeded).
-- **Voroa** hosts the FastAPI web service; the free default address (`*.getvoroa.com`)
-  includes HTTPS. Idle/sleep behaviour and plan limits are set in the Voroa dashboard —
-  for a demo, disable sleeping so the first judge request is not a cold start.
-- Vercel's Hobby plan serves the SPA and the rewrites used here; no serverless
-  functions are involved, so no function-timeout tuning is needed.
+---
 
-## 5. Troubleshooting
+## 4. Post-deploy checklist
+
+- [x] `https://portpulse-api.vercel.app/api/health` → `{"status":"ok"}`
+- [x] `/api/overview` returns live engine data (DEMO_AIS + real POLB capacity)
+- [x] Frontend SPA renders and proxies API calls (`/api/overview`, `/api/forecast`)
+- [ ] Open the dashboard once before a demo to prewarm the engines
+- [ ] `demo/live-demo-url.txt` + `submission.yaml` updated with the live URL
+
+## 5. Cost / plan notes
+
+- **Supabase free tier** hosts the database ($0/month, already seeded).
+- **Vercel Hobby** hosts both the SPA and the serverless function (100 GB-h
+  function execution included; Fluid Compute billing applies per active CPU).
+
+## 6. Troubleshooting
 
 | Symptom | Cause / fix |
 |---|---|
-| Deploy aborted — "not ready within 180s" | First boot seeds the DB; raise **Startup timeout** (Settings) to ~300 s and set Health check path to `/health`. |
-| `/api/*` returns 504 from Vercel | Long CP-SAT solve. Retry once (warm cache) or prewarm with `GET /api/overview` before the demo. |
-| `Can't load plugin: sqlalchemy.dialects:postgres` | `DATABASE_URL` scheme not recognised — the normaliser in `db.py` handles `postgresql://` and `postgres://`; make sure the var was saved and the service redeployed. |
+| `FUNCTION_INVOCATION_FAILED` at boot, logs show `libgomp.so.1: cannot open shared object file` | The vendored preload didn't ship — check `app/lib/libgomp.so.1` is committed and `app/__init__.py` loads it before engine imports. |
+| Every route returns FastAPI 404 (`{"detail":"Not Found"}`) even `/openapi.json` | A catch-all rewrite to the function is mangling the ASGI path — remove rewrites from `src/backend/vercel.json` and rely on native `/api/*` routing. |
 | `no tenant identifier provided (external_id or sni_hostname required)` | Supabase pooler URL missing the project ref in the username — use `<user>.<project-ref>@aws-0-<region>.pooler.supabase.com`. |
-| `password authentication failed` for `portpulse_app` | Reset the role password (Supabase dashboard → SQL editor) and update the Voroa env var; the role is defined in the `create_portpulse_app_role` migration. |
-| CORS errors in the browser console | You are calling the Voroa URL directly instead of through the Vercel proxy; use relative `/api` paths (the app already does). |
-| Empty charts, "no congestion observations" | Database emptied; redeploy the backend (startup re-seeds only when `terminal` is empty) or run the seed command once. |
+| `npm error ENOENT … /vercel/path0/package.json` in Git-driven builds | A project is building the repo root with Node defaults. Set **Root Directory** (`src/frontend` / `src/backend`) per project in the Vercel dashboard, or deploy via CLI from those directories as this guide does. |
+| 503/504 on first request after idle | Cold start + engine warm-up. Prewarm with `GET /api/overview` before the demo. |
+| Builder error: `No interpreter found for Python 3.11` | `requires-python` was re-pinned to `==3.11.*` or a `.python-version` file says 3.11 — the Vercel builder only has 3.12; keep `>=3.11`. |
+| CORS errors in the browser console | Calling the backend URL directly instead of through the frontend proxy; use relative `/api` paths (the app already does). |

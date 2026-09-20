@@ -4,8 +4,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/health", "destination": "https://PORTPULSE-BACKEND-URL.getvoroa.com/health" },
-    { "source": "/api/:path*", "destination": "https://PORTPULSE-BACKEND-URL.getvoroa.com/api/:path*" },
+    { "source": "/health", "destination": "https://portpulse-api.vercel.app/health" },
+    { "source": "/api/:path*", "destination": "https://portpulse-api.vercel.app/api/:path*" },
     { "source": "/((?!api/|health).*)", "destination": "/index.html" }
   ]
 }

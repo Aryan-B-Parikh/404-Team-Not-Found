@@ -10,7 +10,7 @@ project:
   tagline: Container congestion predictor & port operations optimiser for San Pedro Bay
   repository: https://github.com/Aryan-B-Parikh/404-Team-Not-Found
   video_url: https://youtu.be/PS7Ze88sNBM   # mirrors demo/demo-video-link.txt
-  live_demo: null                           # not deployed — run locally (docs/setup-guide.md)
+  live_demo: https://portpulse-ai-woad.vercel.app   # SPA; API proxied to the serverless backend
 
 # ── Team ──────────────────────────────────────────────────────────────────────
 team:
@@ -42,7 +42,8 @@ bob:
 
 # ── How to run (judges) ───────────────────────────────────────────────────────
 run:
-  one_command: ./scripts/dev.sh             # seeds if empty; backend :8000 + frontend :5173
+  deployed: https://portpulse-ai-woad.vercel.app   # no setup needed
+  one_command: ./scripts/dev.sh             # local: seeds if empty; backend :8000 + frontend :5173
   manual: docs/setup-guide.md
   requirements:
     - Python 3.11 (uv)
