@@ -122,7 +122,7 @@ def _run_once(prompt: str, *, max_turns: int | None = None, timeout: int | None 
     if s.bob_team_id:
         env["BOB_TEAM_ID"] = s.bob_team_id
     instruction = f"{BOB_OPERATIONAL_RULES}\n\nUSER REQUEST:\n{prompt}"
-    argv = [cli, "run", "--trust", "--max-turns", str(max_turns or s.bob_max_turns), "--format", "stream-json", instruction]
+    argv = [cli, "run", "--trust", "--accept-license", "--disable-subagents", "--max-turns", str(max_turns or s.bob_max_turns), "--format", "stream-json", instruction]
     try:
         proc = subprocess.run(
             argv,
@@ -133,6 +133,7 @@ def _run_once(prompt: str, *, max_turns: int | None = None, timeout: int | None 
             errors="replace",
             cwd=str(workspace),
             timeout=timeout or s.bob_timeout_s,
+            stdin=subprocess.DEVNULL,  # headless: a TTY makes the CLI hang waiting for input
         )
     except subprocess.TimeoutExpired:
         return {"ok": False, "text": "", "actions": [], "tool_calls": 0, "status": "timeout", "error": "bob timeout", "cost": 0.0}
