@@ -1,0 +1,9 @@
+# Canonical identity map (process audit rec #4).
+# Format: Proper Name <proper@email> Other Name <other@email>
+# After editing, refresh local attribution with:
+#   git shortlog -sne --mailmap
+Parikh Aryan Bharatbhai <aryan81006@gmail.com> Aryan Parikh <aryan81006@gmail.com>
+Aryan Parikh <aryan81006@gmail.com> Parikh Aryan Bharatbhai <aryan81006@gmail.com>
+Mahima Kukadiya <kukadiyamahimace@gmail.com> kukadiyamahimace@gmail.com <kukadiyamahimace@gmail.com>
+Dhruvi Kanabar <dhruvikanabar2006@gmail.com> Dhruvi <dhruvikanabar2006@gamil.com>
+Om Mistry <ommistry5559@gmail.com> ommistry223 <ommistry5559@gmail.com>

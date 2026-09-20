@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "portflow": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${workspaceFolder}/src/backend",
+        "python",
+        "-m",
+        "app.mcp_server"
+      ]
+    }
+  }
+}

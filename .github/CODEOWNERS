@@ -1,0 +1,13 @@
+# Default owners — every PR needs one approval from a code owner.
+# Order matters: the last matching pattern wins.
+*                                       @Aryan-B-Parikh
+
+# Forecasting / optimisation engines — highest blast radius (sign bugs hid here)
+src/backend/app/services/forecasting.py @Aryan-B-Parikh
+src/backend/app/services/weather_adjust.py @Aryan-B-Parikh
+src/backend/app/services/optimiser.py   @Aryan-B-Parikh
+src/backend/app/services/simulation.py  @Aryan-B-Parikh
+
+# API contract changes must touch both sides — reviewer checks the counterpart updated
+src/frontend/src/lib/schemas.ts         @Aryan-B-Parikh
+src/backend/app/routers/                @Aryan-B-Parikh

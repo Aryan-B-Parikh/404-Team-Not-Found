@@ -1,0 +1,2813 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PortPulse AI API",
+    "description": "PortPulse AI: forecasting, anomalies, CP-SAT optimisation, routing, and IBM Bob agent orchestration.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/overview": {
+      "get": {
+        "tags": [
+          "overview"
+        ],
+        "summary": "Overview",
+        "operationId": "overview_api_overview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Overview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/forecast": {
+      "get": {
+        "tags": [
+          "forecast"
+        ],
+        "summary": "Forecast",
+        "operationId": "forecast_api_forecast_get",
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Z-PORT",
+              "title": "Zone"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/anomalies": {
+      "get": {
+        "tags": [
+          "anomalies"
+        ],
+        "summary": "Anomalies",
+        "operationId": "anomalies_api_anomalies_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnomaliesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/optimise/latest": {
+      "get": {
+        "tags": [
+          "optimise"
+        ],
+        "summary": "Latest",
+        "operationId": "latest_api_optimise_latest_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptimiseLatest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/optimise": {
+      "post": {
+        "tags": [
+          "optimise"
+        ],
+        "summary": "Run Optimise",
+        "operationId": "run_optimise_api_optimise_post",
+        "parameters": [
+          {
+            "name": "incremental",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "alias for body.incremental (W3)",
+              "title": "Incremental"
+            },
+            "description": "alias for body.incremental (W3)"
+          },
+          {
+            "name": "tidal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "alias for body.tidal (W3)",
+              "title": "Tidal"
+            },
+            "description": "alias for body.tidal (W3)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__routers__optimise__ScenarioBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptimiseLatest"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tides": {
+      "get": {
+        "tags": [
+          "optimise"
+        ],
+        "summary": "Get Tides",
+        "description": "W3: tidal depth curve for every berth (read-only).\n\nServes whatever the tide pipeline last persisted — NOAA CO-OPS rows when present,\nelse the labelled harmonic model — as depth_ft at each integer hour 0..hours per\nberth. A GET never fetches or writes: the write side lives at startup (main.py)\nand POST /api/tides/refresh.",
+        "operationId": "get_tides_api_tides_get",
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 168,
+              "minimum": 24,
+              "default": 72,
+              "title": "Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TidesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tides/refresh": {
+      "post": {
+        "tags": [
+          "optimise"
+        ],
+        "summary": "Refresh Tides",
+        "description": "Force a fresh NOAA CO-OPS fetch and replace tidal window rows.\n\nReturns {source, rows_written, station} — callable from the QualityPage refresh button.",
+        "operationId": "refresh_tides_api_tides_refresh_post",
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 168,
+              "minimum": 24,
+              "default": 96,
+              "title": "Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios": {
+      "post": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "Scenario",
+        "operationId": "scenario_api_scenarios_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__routers__scenarios__ScenarioBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/extended": {
+      "post": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "Scenario Extended",
+        "description": "W3 extended what-if: forecast and optimise the modified context, then compare.",
+        "operationId": "scenario_extended_api_scenarios_extended_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendedScenarioBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioExtendedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/{scenario_id}/rollback": {
+      "post": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "Scenario Rollback",
+        "operationId": "scenario_rollback_api_scenarios__scenario_id__rollback_post",
+        "parameters": [
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Scenario Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioRollbackResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routing": {
+      "get": {
+        "tags": [
+          "routing"
+        ],
+        "summary": "Routing",
+        "operationId": "routing_api_routing_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plan": {
+      "get": {
+        "tags": [
+          "plan"
+        ],
+        "summary": "Get Plan",
+        "description": "Return the latest persisted plan or build a fresh engine-grounded plan.",
+        "operationId": "get_plan_api_plan_get",
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Text"
+            }
+          },
+          {
+            "name": "persist",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Persist"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "plan"
+        ],
+        "summary": "Regenerate",
+        "operationId": "regenerate_api_plan_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export": {
+      "get": {
+        "tags": [
+          "plan"
+        ],
+        "summary": "Export",
+        "operationId": "export_api_export_get",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "assignments",
+              "title": "Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/terminals": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Terminals",
+        "operationId": "terminals_api_terminals_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerminalsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vessels": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Vessels",
+        "operationId": "vessels_api_vessels_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VesselsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hotspots": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Hotspots",
+        "operationId": "hotspots_api_hotspots_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hotspots"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/terminals/{code}/config_version": {
+      "patch": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Bump Config Version",
+        "description": "Module A: increment config_version so context fingerprint changes and caches invalidate.",
+        "operationId": "bump_config_version_api_terminals__code__config_version_patch",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vessels/upload": {
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Upload Schedule",
+        "description": "Import a physically complete vessel schedule and immediately rebuild the plan.\n\nPhysical fields are mandatory. The endpoint never substitutes fabricated vessel\ndimensions, draft, moves or destination values.",
+        "operationId": "upload_schedule_api_vessels_upload_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_schedule_api_vessels_upload_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quality/refresh": {
+      "post": {
+        "tags": [
+          "quality"
+        ],
+        "summary": "Quality Refresh",
+        "description": "Explicit normalisation + completeness recompute (the write side of Module D).",
+        "operationId": "quality_refresh_api_quality_refresh_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quality": {
+      "get": {
+        "tags": [
+          "quality"
+        ],
+        "summary": "Quality",
+        "description": "Read the last computed per-terminal data-completeness snapshot (Module D).\n\nRead-only by design (spec: GETs must be idempotent; B-5): normalisation runs\nexplicitly at startup or via POST /api/quality/refresh, never on this path.",
+        "operationId": "quality_api_quality_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/weather/refresh": {
+      "post": {
+        "tags": [
+          "quality"
+        ],
+        "summary": "Weather Refresh",
+        "description": "Run the W1 Open-Meteo pipeline and persist `WeatherObservation` rows.\n\nAudit B-6: the pipeline existed but was never invoked, so `FEATURE_WEATHER` was\nunreachable and `weather_used` stayed false forever. This is the missing wiring.\nIf Open-Meteo is unreachable the pipeline inserts nothing and this returns an\nempty series — the forecast then reports `weather_used: false` instead of failing.",
+        "operationId": "weather_refresh_api_weather_refresh_post",
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 336,
+              "minimum": 24,
+              "default": 72,
+              "title": "Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/weather": {
+      "get": {
+        "tags": [
+          "quality"
+        ],
+        "summary": "Weather",
+        "description": "Wind/wave/visibility series for San Pedro Bay (rows persisted by the pipeline).",
+        "operationId": "weather_api_weather_get",
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 336,
+              "minimum": 1,
+              "default": 72,
+              "title": "Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeatherResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bts/parse": {
+      "post": {
+        "tags": [
+          "quality"
+        ],
+        "summary": "Bts Parse",
+        "description": "Audit B-7: wire the BTS PPFSP benchmark parser to an endpoint (was dead code).\n\nAccepts a BTS weekly-berthing CSV, validates and parses it, returning the rows\nfor forecast validation. Keeps the benchmark load-bearing.",
+        "operationId": "bts_parse_api_bts_parse_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_bts_parse_api_bts_parse_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ais/status": {
+      "get": {
+        "tags": [
+          "ais"
+        ],
+        "summary": "Ais Status",
+        "operationId": "ais_status_api_ais_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AisStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ais/import": {
+      "post": {
+        "tags": [
+          "ais"
+        ],
+        "summary": "Ais Import",
+        "description": "Import a real NOAA AccessAIS CSV, aggregate it, and retain filtered track points.",
+        "operationId": "ais_import_api_ais_import_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_ais_import_api_ais_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ais/generate": {
+      "post": {
+        "tags": [
+          "ais"
+        ],
+        "summary": "Ais Generate",
+        "description": "Generate synthetic DEMO_AIS data for an offline/reproducible demo.",
+        "operationId": "ais_generate_api_ais_generate_post",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 30,
+              "minimum": 7,
+              "default": 14,
+              "title": "Days"
+            }
+          },
+          {
+            "name": "seed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20240817,
+              "title": "Seed"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AisGenerateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bob/status": {
+      "get": {
+        "tags": [
+          "bob"
+        ],
+        "summary": "Status",
+        "operationId": "status_api_bob_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BobStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bob": {
+      "get": {
+        "tags": [
+          "bob"
+        ],
+        "summary": "History",
+        "operationId": "history_api_bob_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BobHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "bob"
+        ],
+        "summary": "Ask",
+        "operationId": "ask_api_bob_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BobBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BobAnswerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AisGenerateResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "rows_scanned": {
+            "type": "integer",
+            "title": "Rows Scanned"
+          },
+          "skipped": {
+            "type": "integer",
+            "title": "Skipped"
+          },
+          "vessels": {
+            "type": "integer",
+            "title": "Vessels"
+          },
+          "hours": {
+            "type": "number",
+            "title": "Hours"
+          },
+          "output_rows": {
+            "type": "integer",
+            "title": "Output Rows"
+          },
+          "inserted": {
+            "type": "integer",
+            "title": "Inserted"
+          },
+          "is_measured": {
+            "type": "boolean",
+            "title": "Is Measured"
+          },
+          "zones": {
+            "type": "integer",
+            "title": "Zones"
+          },
+          "newest_ts": {
+            "type": "string",
+            "title": "Newest Ts"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "stub": {
+            "type": "boolean",
+            "title": "Stub",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "source",
+          "message",
+          "rows_scanned",
+          "skipped",
+          "vessels",
+          "hours",
+          "output_rows",
+          "inserted",
+          "is_measured",
+          "zones",
+          "newest_ts",
+          "days",
+          "seed"
+        ],
+        "title": "AisGenerateResponse",
+        "description": "Keys = build stats + import stats + generator params (all declared)."
+      },
+      "AisStatusResponse": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "rows": {
+            "type": "integer",
+            "title": "Rows"
+          },
+          "zones": {
+            "type": "integer",
+            "title": "Zones"
+          },
+          "track_points": {
+            "type": "integer",
+            "title": "Track Points"
+          },
+          "newest_ts": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Newest Ts"
+          },
+          "oldest_ts": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oldest Ts"
+          },
+          "stub": {
+            "type": "boolean",
+            "title": "Stub",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "rows",
+          "zones",
+          "track_points"
+        ],
+        "title": "AisStatusResponse"
+      },
+      "Alert": {
+        "properties": {
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "hour": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hour"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "severity",
+          "title",
+          "detail"
+        ],
+        "title": "Alert"
+      },
+      "AnomaliesResponse": {
+        "properties": {
+          "anomalies": {
+            "items": {
+              "$ref": "#/components/schemas/AnomalyFlag"
+            },
+            "type": "array",
+            "title": "Anomalies"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "generated_at": {
+            "type": "string",
+            "title": "Generated At"
+          },
+          "weather_used": {
+            "type": "boolean",
+            "title": "Weather Used"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "anomalies",
+          "method",
+          "generated_at",
+          "weather_used"
+        ],
+        "title": "AnomaliesResponse"
+      },
+      "AnomalyFlag": {
+        "properties": {
+          "zone_code": {
+            "type": "string",
+            "title": "Zone Code"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "is_anomaly": {
+            "type": "boolean",
+            "title": "Is Anomaly"
+          },
+          "sample_size": {
+            "type": "integer",
+            "title": "Sample Size"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "window_hours": {
+            "type": "integer",
+            "title": "Window Hours"
+          },
+          "features": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features"
+          },
+          "weather_used": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weather Used"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "zone_code",
+          "kind",
+          "method",
+          "score",
+          "is_anomaly",
+          "sample_size",
+          "detail",
+          "confidence",
+          "window_hours"
+        ],
+        "title": "AnomalyFlag"
+      },
+      "Arrival": {
+        "properties": {
+          "hour": {
+            "type": "integer",
+            "title": "Hour"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hour",
+          "count"
+        ],
+        "title": "Arrival"
+      },
+      "BobAnswerResponse": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "actions": {
+            "items": {},
+            "type": "array",
+            "title": "Actions"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "intent": {
+            "type": "string",
+            "title": "Intent"
+          },
+          "grounded": {
+            "type": "boolean",
+            "title": "Grounded",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content",
+          "actions",
+          "mode",
+          "provider",
+          "intent"
+        ],
+        "title": "BobAnswerResponse"
+      },
+      "BobBody": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "BobBody"
+      },
+      "BobHistoryResponse": {
+        "properties": {
+          "messages": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Messages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "BobHistoryResponse"
+      },
+      "BobStatusResponse": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "configured": {
+            "type": "boolean",
+            "title": "Configured"
+          },
+          "cli_available": {
+            "type": "boolean",
+            "title": "Cli Available"
+          },
+          "mcp": {
+            "type": "string",
+            "title": "Mcp"
+          },
+          "tools": {
+            "type": "integer",
+            "title": "Tools"
+          },
+          "fallback": {
+            "type": "string",
+            "title": "Fallback"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "configured",
+          "cli_available",
+          "mcp",
+          "tools",
+          "fallback"
+        ],
+        "title": "BobStatusResponse"
+      },
+      "Body_ais_import_api_ais_import_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_ais_import_api_ais_import_post"
+      },
+      "Body_bts_parse_api_bts_parse_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_bts_parse_api_bts_parse_post"
+      },
+      "Body_upload_schedule_api_vessels_upload_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_schedule_api_vessels_upload_post"
+      },
+      "Dataset": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "note"
+        ],
+        "title": "Dataset"
+      },
+      "ExtendedScenarioBody": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "CRANE_OUTAGE | PRODUCTIVITY | BERTH_REMOVED | BERTH_ADDED | BUNCHING | SCHEDULE_CHANGE",
+            "default": "CRANE_OUTAGE"
+          },
+          "crane_factor": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.5,
+            "title": "Crane Factor",
+            "default": 1.0
+          },
+          "move_rate_per_crane_hour": {
+            "type": "number",
+            "maximum": 35.0,
+            "minimum": 20.0,
+            "title": "Move Rate Per Crane Hour",
+            "default": 28.0
+          },
+          "terminal_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminal Code"
+          },
+          "berth_count_delta": {
+            "type": "integer",
+            "maximum": 8.0,
+            "minimum": 0.0,
+            "title": "Berth Count Delta",
+            "default": 0
+          },
+          "bunching_vessels": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Bunching Vessels",
+            "default": 0
+          },
+          "schedule_shift_hours": {
+            "type": "number",
+            "maximum": 48.0,
+            "minimum": -48.0,
+            "title": "Schedule Shift Hours",
+            "default": -6.0
+          },
+          "parent_scenario_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Scenario Id"
+          }
+        },
+        "type": "object",
+        "title": "ExtendedScenarioBody",
+        "description": "W3: berth add/remove, crane outage, vessel bunching, schedule change."
+      },
+      "ForecastResponse": {
+        "properties": {
+          "t0": {
+            "type": "string",
+            "title": "T0"
+          },
+          "dataset_source": {
+            "type": "string",
+            "title": "Dataset Source"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Summary"
+          },
+          "selected": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selected"
+          },
+          "hotspots": {
+            "$ref": "#/components/schemas/Hotspots"
+          },
+          "anomalies": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Anomalies"
+          },
+          "weather_used": {
+            "type": "boolean",
+            "title": "Weather Used"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "confidence_by_horizon": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Confidence By Horizon"
+          },
+          "horizons": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Horizons"
+          },
+          "provenance": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Provenance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "t0",
+          "dataset_source",
+          "summary",
+          "selected",
+          "hotspots",
+          "anomalies",
+          "weather_used",
+          "confidence",
+          "confidence_by_horizon",
+          "horizons",
+          "provenance"
+        ],
+        "title": "ForecastResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse"
+      },
+      "Hotspot": {
+        "properties": {
+          "zone_code": {
+            "type": "string",
+            "title": "Zone Code"
+          },
+          "zone_name": {
+            "type": "string",
+            "title": "Zone Name"
+          },
+          "risk_score": {
+            "type": "number",
+            "title": "Risk Score"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "peak_index": {
+            "type": "number",
+            "title": "Peak Index"
+          },
+          "peak_hour": {
+            "type": "number",
+            "title": "Peak Hour"
+          },
+          "binding_constraint": {
+            "type": "string",
+            "title": "Binding Constraint"
+          },
+          "binding_evidence": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Binding Evidence"
+          },
+          "resource_pressure": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Resource Pressure"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "components": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Components"
+          },
+          "weights": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Weights"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "zone_code",
+          "zone_name",
+          "risk_score",
+          "confidence",
+          "peak_index",
+          "peak_hour",
+          "binding_constraint",
+          "binding_evidence",
+          "resource_pressure",
+          "explanation",
+          "components",
+          "weights"
+        ],
+        "title": "Hotspot"
+      },
+      "Hotspots": {
+        "properties": {
+          "ranked": {
+            "items": {
+              "$ref": "#/components/schemas/Hotspot"
+            },
+            "type": "array",
+            "title": "Ranked"
+          },
+          "most_actionable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Hotspot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ranked"
+        ],
+        "title": "Hotspots"
+      },
+      "Kpis": {
+        "properties": {
+          "port_index_now": {
+            "type": "number",
+            "title": "Port Index Now"
+          },
+          "berth_util_pct": {
+            "type": "number",
+            "title": "Berth Util Pct"
+          },
+          "crane_util_pct": {
+            "type": "number",
+            "title": "Crane Util Pct"
+          },
+          "vessels_at_anchor": {
+            "type": "number",
+            "title": "Vessels At Anchor"
+          },
+          "vessels_inbound": {
+            "type": "number",
+            "title": "Vessels Inbound"
+          },
+          "avg_anchorage_wait": {
+            "type": "number",
+            "title": "Avg Anchorage Wait"
+          },
+          "max_anchored_hours": {
+            "type": "number",
+            "title": "Max Anchored Hours"
+          },
+          "arrivals_next24": {
+            "type": "number",
+            "title": "Arrivals Next24"
+          },
+          "moves_pending": {
+            "type": "number",
+            "title": "Moves Pending"
+          },
+          "daily_fleet_burn_usd": {
+            "type": "number",
+            "title": "Daily Fleet Burn Usd"
+          },
+          "peak_forecast_index": {
+            "type": "number",
+            "title": "Peak Forecast Index"
+          },
+          "peak_forecast_hour": {
+            "type": "number",
+            "title": "Peak Forecast Hour"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "port_index_now",
+          "berth_util_pct",
+          "crane_util_pct",
+          "vessels_at_anchor",
+          "vessels_inbound",
+          "avg_anchorage_wait",
+          "max_anchored_hours",
+          "arrivals_next24",
+          "moves_pending",
+          "daily_fleet_burn_usd",
+          "peak_forecast_index",
+          "peak_forecast_hour"
+        ],
+        "title": "Kpis"
+      },
+      "OptimiseLatest": {
+        "properties": {
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "solver": {
+            "type": "string",
+            "title": "Solver"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "objective": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective"
+          },
+          "solve_ms": {
+            "type": "integer",
+            "title": "Solve Ms"
+          },
+          "assignments": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Assignments"
+          },
+          "metrics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics"
+          },
+          "baseline": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Baseline"
+          },
+          "deltas": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Deltas"
+          },
+          "deferred": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Deferred"
+          },
+          "weights": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Weights"
+          },
+          "tidal_feasible": {
+            "type": "boolean",
+            "title": "Tidal Feasible",
+            "default": true
+          },
+          "incremental": {
+            "type": "boolean",
+            "title": "Incremental",
+            "default": false
+          },
+          "gap_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap Pct"
+          },
+          "horizon_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Horizon Hours"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "solver",
+          "status",
+          "solve_ms",
+          "assignments",
+          "metrics",
+          "baseline",
+          "deltas",
+          "deferred",
+          "weights"
+        ],
+        "title": "OptimiseLatest"
+      },
+      "Overview": {
+        "properties": {
+          "t0": {
+            "type": "string",
+            "title": "T0"
+          },
+          "dataset": {
+            "$ref": "#/components/schemas/Dataset"
+          },
+          "data_version": {
+            "type": "string",
+            "title": "Data Version"
+          },
+          "weather_used": {
+            "type": "boolean",
+            "title": "Weather Used"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "kpis": {
+            "$ref": "#/components/schemas/Kpis"
+          },
+          "zones": {
+            "items": {
+              "$ref": "#/components/schemas/Zone"
+            },
+            "type": "array",
+            "title": "Zones"
+          },
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            },
+            "type": "array",
+            "title": "Alerts"
+          },
+          "hotspots": {
+            "$ref": "#/components/schemas/Hotspots"
+          },
+          "anomalies": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Anomalies"
+          },
+          "arrivals_timeline": {
+            "items": {
+              "$ref": "#/components/schemas/Arrival"
+            },
+            "type": "array",
+            "title": "Arrivals Timeline"
+          },
+          "last_updated": {
+            "type": "string",
+            "title": "Last Updated"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "t0",
+          "dataset",
+          "data_version",
+          "weather_used",
+          "confidence",
+          "kpis",
+          "zones",
+          "alerts",
+          "hotspots",
+          "anomalies",
+          "arrivals_timeline",
+          "last_updated"
+        ],
+        "title": "Overview"
+      },
+      "PlanResponse": {
+        "properties": {
+          "summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Summary"
+          },
+          "shifts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Shifts"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "narrative_source": {
+            "type": "string",
+            "title": "Narrative Source"
+          },
+          "plan_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Id"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "forecast_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecast Run Id"
+          },
+          "optimiser_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Optimiser Run Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "summary",
+          "shifts",
+          "text",
+          "narrative_source"
+        ],
+        "title": "PlanResponse",
+        "description": "Spec §6 traceability: the plan exposes the snapshot that produced it."
+      },
+      "QualityResponse": {
+        "properties": {
+          "terminals": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Terminals"
+          },
+          "rules_version": {
+            "type": "string",
+            "title": "Rules Version"
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At"
+          },
+          "stub": {
+            "type": "boolean",
+            "title": "Stub",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "terminals",
+          "rules_version"
+        ],
+        "title": "QualityResponse",
+        "description": "Read-only snapshot (B-5): normalisation writes live at startup + POST /quality/refresh."
+      },
+      "RoutingResponse": {
+        "properties": {
+          "recommendations": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Recommendations"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Counts"
+          },
+          "total_savings_usd": {
+            "type": "number",
+            "title": "Total Savings Usd"
+          },
+          "cost_model": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Cost Model"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "recommendations",
+          "counts",
+          "total_savings_usd",
+          "cost_model"
+        ],
+        "title": "RoutingResponse"
+      },
+      "ScenarioExtendedResponse": {
+        "properties": {
+          "baseline": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Baseline"
+          },
+          "scenario": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Scenario"
+          },
+          "impact": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Impact"
+          },
+          "feasible": {
+            "type": "boolean",
+            "title": "Feasible"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "parent_scenario_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Scenario Id"
+          },
+          "scenario_id": {
+            "type": "integer",
+            "title": "Scenario Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "forecast": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Forecast"
+          },
+          "solver": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Solver"
+          },
+          "weights": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Weights"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "baseline",
+          "scenario",
+          "impact",
+          "feasible",
+          "kind",
+          "scenario_id",
+          "description",
+          "forecast",
+          "solver",
+          "weights"
+        ],
+        "title": "ScenarioExtendedResponse"
+      },
+      "ScenarioResponse": {
+        "properties": {
+          "scenario_id": {
+            "type": "integer",
+            "title": "Scenario Id"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "baseline": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Baseline"
+          },
+          "scenario": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Scenario"
+          },
+          "impact": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Impact"
+          },
+          "weights": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Weights"
+          },
+          "solver": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Solver"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "params",
+          "baseline",
+          "scenario",
+          "impact",
+          "weights",
+          "solver"
+        ],
+        "title": "ScenarioResponse"
+      },
+      "ScenarioRollbackResponse": {
+        "properties": {
+          "restored": {
+            "type": "boolean",
+            "title": "Restored"
+          },
+          "scenario_id": {
+            "type": "integer",
+            "title": "Scenario Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "restored",
+          "scenario_id",
+          "status"
+        ],
+        "title": "ScenarioRollbackResponse"
+      },
+      "TerminalsResponse": {
+        "properties": {
+          "terminals": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Terminals"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "terminals",
+          "source"
+        ],
+        "title": "TerminalsResponse"
+      },
+      "TidesResponse": {
+        "properties": {
+          "period_hours": {
+            "type": "number",
+            "title": "Period Hours"
+          },
+          "amplitude_ft": {
+            "type": "number",
+            "title": "Amplitude Ft"
+          },
+          "under_keel_margin_ft": {
+            "type": "number",
+            "title": "Under Keel Margin Ft"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "berths": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Berths"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "period_hours",
+          "amplitude_ft",
+          "under_keel_margin_ft",
+          "source",
+          "berths"
+        ],
+        "title": "TidesResponse"
+      },
+      "UploadResponse": {
+        "properties": {
+          "accepted": {
+            "type": "integer",
+            "title": "Accepted"
+          },
+          "rejected": {
+            "type": "integer",
+            "title": "Rejected"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "revisions_created": {
+            "type": "integer",
+            "title": "Revisions Created"
+          },
+          "normalised_rows": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalised Rows"
+          },
+          "upload_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Id"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes"
+          },
+          "stub": {
+            "type": "boolean",
+            "title": "Stub",
+            "default": false
+          },
+          "replan": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replan"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "accepted",
+          "rejected",
+          "errors",
+          "revisions_created"
+        ],
+        "title": "UploadResponse",
+        "description": "Both upload paths: the parse-failure path omits normalised_rows/replan."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VesselsResponse": {
+        "properties": {
+          "vessels": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Vessels"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "vessels"
+        ],
+        "title": "VesselsResponse"
+      },
+      "WeatherResponse": {
+        "properties": {
+          "points": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "hours": {
+            "type": "integer",
+            "title": "Hours"
+          },
+          "stub": {
+            "type": "boolean",
+            "title": "Stub",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "points",
+          "source",
+          "hours"
+        ],
+        "title": "WeatherResponse"
+      },
+      "Zone": {
+        "properties": {
+          "zone_code": {
+            "type": "string",
+            "title": "Zone Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "trend": {
+            "type": "string",
+            "title": "Trend"
+          },
+          "current_index": {
+            "type": "number",
+            "title": "Current Index"
+          },
+          "peak_index": {
+            "type": "number",
+            "title": "Peak Index"
+          },
+          "peak_hour": {
+            "type": "number",
+            "title": "Peak Hour"
+          },
+          "recent_index": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Recent Index"
+          },
+          "queue_now": {
+            "type": "number",
+            "title": "Queue Now"
+          },
+          "wait_now": {
+            "type": "number",
+            "title": "Wait Now"
+          },
+          "berths": {
+            "type": "number",
+            "title": "Berths"
+          },
+          "cranes": {
+            "type": "number",
+            "title": "Cranes"
+          },
+          "yard_util_pct": {
+            "type": "number",
+            "title": "Yard Util Pct"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "zone_code",
+          "label",
+          "level",
+          "trend",
+          "current_index",
+          "peak_index",
+          "peak_hour",
+          "recent_index",
+          "queue_now",
+          "wait_now",
+          "berths",
+          "cranes",
+          "yard_util_pct"
+        ],
+        "title": "Zone"
+      },
+      "app__routers__optimise__ScenarioBody": {
+        "properties": {
+          "crane_factor": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.5,
+            "title": "Crane Factor",
+            "description": "crane availability multiplier",
+            "default": 1.0
+          },
+          "move_rate_per_crane_hour": {
+            "type": "number",
+            "maximum": 35.0,
+            "minimum": 20.0,
+            "title": "Move Rate Per Crane Hour",
+            "default": 28.0
+          },
+          "incremental": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incremental",
+            "description": "warm-start from the previous CP-SAT solution (W3)"
+          },
+          "tidal": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tidal",
+            "description": "enforce tidal windows on deep-draft vessels (W3)"
+          }
+        },
+        "type": "object",
+        "title": "ScenarioBody"
+      },
+      "app__routers__scenarios__ScenarioBody": {
+        "properties": {
+          "crane_factor": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.5,
+            "title": "Crane Factor",
+            "default": 1.0
+          },
+          "move_rate_per_crane_hour": {
+            "type": "number",
+            "maximum": 35.0,
+            "minimum": 20.0,
+            "title": "Move Rate Per Crane Hour",
+            "default": 28.0
+          }
+        },
+        "type": "object",
+        "title": "ScenarioBody"
+      }
+    }
+  }
+}

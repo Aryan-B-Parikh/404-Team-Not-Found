@@ -1,0 +1,3 @@
+
+# LightGBM model cache
+.model_cache/

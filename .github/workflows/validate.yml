@@ -1,0 +1,144 @@
+name: ✅ Validate
+
+# Project CI — two-tier gate:
+#   fast  — every push & PR: lint + fast tests + typecheck + e2e + contract drift check
+#   full  — PRs to main only: full backend suite + production build
+# (Former Bobathon submission-validator steps removed; the engineering gates remain.)
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  fast:
+    name: Fast Checks (lint + tests + typecheck + e2e)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "src/backend/uv.lock"
+
+      - name: Install backend dependencies
+        working-directory: src/backend
+        run: uv sync --extra dev
+
+      - name: Backend lint
+        working-directory: src/backend
+        run: uv run ruff check app tests
+
+      - name: Backend fast tests (slow markers deselected)
+        working-directory: src/backend
+        run: uv run pytest -m "not slow"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: src/frontend
+        run: npm ci
+
+      - name: TypeScript typecheck
+        working-directory: src/frontend
+        run: npm run typecheck
+
+      - name: Install Playwright browser
+        working-directory: src/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser smoke tests (B-8: mocked-API page render gates)
+        working-directory: src/frontend
+        run: npx playwright test
+
+      - name: Re-export OpenAPI schema from the app
+        working-directory: src/backend
+        run: |
+          uv run python -c "import json; from fastapi.testclient import TestClient; from app.main import app; json.dump(TestClient(app).get('/openapi.json').json(), open('openapi.json','w'), indent=1)"
+
+      - name: API contract drift check (regenerate TS types, fail on diff)
+        working-directory: src/frontend
+        run: |
+          npm run gen:api
+          git diff --exit-code -- src/lib/api-types.gen.ts ../backend/openapi.json \
+            || (echo "::error::Contract drift: backend schema changed without regenerating. Run the export + 'npm run gen:api' and commit." && exit 1)
+
+  full:
+    name: Full Suite + Production Build (PRs to main)
+    needs: fast
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+
+    # DB-gated tests (contract shapes, engines, Bob integration) need a real
+    # database — this service makes them actually run on the merge gate.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: portflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "src/backend/uv.lock"
+
+      - name: Install backend dependencies
+        working-directory: src/backend
+        run: uv sync --extra dev
+
+      - name: Seed database (creates schema + demo dataset)
+        working-directory: src/backend
+        run: uv run python -m app.seed --reset
+
+      - name: Run full backend test suite
+        working-directory: src/backend
+        run: uv run pytest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: src/frontend
+        run: npm ci
+
+      - name: Production build
+        working-directory: src/frontend
+        run: npm run build
