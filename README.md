@@ -8,9 +8,9 @@
 
 | Field | Value |
 |---|---|
-| **Team** | ElevateX |
-| **Team Lead** | Aryan Parikh — 24ce070@charusat.edu.in |
-| **Members** | Mahima Kukadiya (24ce058@charusat.edu.in) · Dhruvi Kanabar (24ce050@charusat.edu.in) · Om Mistry (24ce065@charusat.edu.in) |
+| **Team** | 404-Team-Not-Found |
+| **Team Lead** | Aryan Parikh — aryan81006@gmail.com |
+| **Members** | Mahima Kukadiya (kukadiyamahimace@gmail.com) |
 
 ---
 
